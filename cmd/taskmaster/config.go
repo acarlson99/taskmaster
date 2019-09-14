@@ -2,12 +2,12 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
 
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
+	Name         string
 	Cmd          string            `yaml:"cmd"`
 	NumProcs     int               `yaml:"numprocs"`
 	Umask        int               `yaml:"umask"`
@@ -29,29 +29,27 @@ func ConfParse(filename string) ([]Config, error) {
 
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		return nil, err
 	}
 
 	err = yaml.Unmarshal([]byte(data), &ymap)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		return nil, err
 	}
 
 	var confs []Config
-	for _, v := range ymap["programs"].(map[interface{}]interface{}) {
-		// fmt.Println(v)
+	for k, v := range ymap["programs"].(map[interface{}]interface{}) {
+		conf := Config{}
 		data, err := yaml.Marshal(v)
 		if err != nil {
-			log.Fatalf("error: %v", err)
+			return confs, err
 		}
-		conf := Config{}
 		err = yaml.Unmarshal(data, &conf)
 		if err != nil {
-			log.Fatalf("error: %v", err)
+			return confs, err
 		}
-		// fmt.Printf("%+v\n", conf)
+		conf.Name = k.(string)
 		confs = append(confs, conf)
-		// fmt.Println("")
 	}
 	return confs, nil
 }
