@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -40,7 +39,7 @@ func ConfParse(filename string) ([]Config, error) {
 
 	var confs []Config
 	for _, v := range ymap["programs"].(map[interface{}]interface{}) {
-		fmt.Println(v)
+		// fmt.Println(v)
 		data, err := yaml.Marshal(v)
 		if err != nil {
 			log.Fatalf("error: %v", err)
@@ -50,9 +49,9 @@ func ConfParse(filename string) ([]Config, error) {
 		if err != nil {
 			log.Fatalf("error: %v", err)
 		}
-		fmt.Printf("%+v\n", conf)
+		// fmt.Printf("%+v\n", conf)
 		confs = append(confs, conf)
-		fmt.Println("")
+		// fmt.Println("")
 	}
 	return confs, nil
 }

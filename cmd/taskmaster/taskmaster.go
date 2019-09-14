@@ -8,7 +8,7 @@ import (
 func main() {
 	flag.Parse()
 	args := flag.Args()
-	fmt.Println(args)
+	// fmt.Println(args)
 
 	if len(args) != 1 {
 		fmt.Errorf("Invalid number of args: %d", len(args))
