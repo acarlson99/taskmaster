@@ -7,24 +7,26 @@ import (
 )
 
 type Config struct {
-	Name         string
-	Cmd          string            `yaml:"cmd"`
-	NumProcs     int               `yaml:"numprocs"`
-	Umask        int               `yaml:"umask"`
+	Name         string            // name of program
+	Cmd          string            `yaml:"cmd"`      // binary to run
+	Args         []string          `yaml:"args"`     // list of args
+	NumProcs     int               `yaml:"numprocs"` // number of processes
+	Umask        interface{}       `yaml:"umask"`    // ???
 	WorkingDir   string            `yaml:"workingdir"`
-	AutoStart    bool              `yaml:"autostart"`
-	AutoRestart  string            `yaml:"autorestart"`
-	ExitCodes    interface{}       `yaml:"exitcodes"` // int or []int
-	StartRetries int               `yaml:"startretries"`
-	StartTime    int               `yaml:"starttime"`
-	StopSignal   string            `yaml:"stopsignal"`
-	StopTime     int               `yaml:"stoptime"`
-	Stdout       string            `yaml:"stdout"`
-	Stderr       string            `yaml:"stderr"`
-	Env          map[string]string `yaml:"env"`
+	AutoStart    bool              `yaml:"autostart"`    // ???
+	AutoRestart  string            `yaml:"autorestart"`  // always/never/unexpected (defult: never)
+	ExitCodes    []int             `yaml:"exitcodes"`    // expected exit codes (default: 0)
+	StartRetries int               `yaml:"startretries"` // times to retry if unexpected exit
+	StartTime    int               `yaml:"starttime"`    // delay before start
+	StopSignal   string            `yaml:"stopsignal"`   // if time up what signal to send
+	StopTime     int               `yaml:"stoptime"`     // time until signal sent
+	Stdin        string            `yaml:"stdin"`        // file read as stdin
+	Stdout       string            `yaml:"stdout"`       // stdout redirect file
+	Stderr       string            `yaml:"stderr"`       // stderr redirect file
+	Env          map[string]string `yaml:"env"`          // map of env vars
 }
 
-func ConfParse(filename string) ([]Config, error) {
+func ParseConfig(filename string) (map[string]Config, error) {
 	ymap := make(map[interface{}]interface{})
 
 	data, err := ioutil.ReadFile(filename)
@@ -37,7 +39,7 @@ func ConfParse(filename string) ([]Config, error) {
 		return nil, err
 	}
 
-	var confs []Config
+	confs := make(map[string]Config)
 	for k, v := range ymap["programs"].(map[interface{}]interface{}) {
 		conf := Config{}
 		data, err := yaml.Marshal(v)
@@ -49,7 +51,7 @@ func ConfParse(filename string) ([]Config, error) {
 			return confs, err
 		}
 		conf.Name = k.(string)
-		confs = append(confs, conf)
+		confs[conf.Name] = conf
 	}
 	return confs, nil
 }
