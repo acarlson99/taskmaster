@@ -6,14 +6,31 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// [x] Cmd
+// [x] Args
+// [ ] NumProcs
+// [x] Umask
+// [x] WorkingDir
+// [ ] AutoStart
+// [ ] AutoRestart
+// [ ] ExitCodes
+// [ ] StartRetries
+// [ ] StartTime
+// [ ] StopSignal
+// [ ] StopTime
+// [x] Stdin
+// [x] Stdout
+// [x] Stderr
+// [x] Env
+
 type Config struct {
 	Name         string            // name of program
 	Cmd          string            `yaml:"cmd"`      // binary to run
 	Args         []string          `yaml:"args"`     // list of args
 	NumProcs     int               `yaml:"numprocs"` // number of processes
-	Umask        interface{}       `yaml:"umask"`    // ???
+	Umask        int               `yaml:"umask"`    // int representing permissions
 	WorkingDir   string            `yaml:"workingdir"`
-	AutoStart    bool              `yaml:"autostart"`    // ???
+	AutoStart    bool              `yaml:"autostart"`    // true/false (default: false)
 	AutoRestart  string            `yaml:"autorestart"`  // always/never/unexpected (defult: never)
 	ExitCodes    []int             `yaml:"exitcodes"`    // expected exit codes (default: 0)
 	StartRetries int               `yaml:"startretries"` // times to retry if unexpected exit
@@ -49,6 +66,14 @@ func ParseConfig(filename string) (map[string]Config, error) {
 		err = yaml.Unmarshal(data, &conf)
 		if err != nil {
 			return confs, err
+		}
+
+		// set defaults
+		if len(conf.ExitCodes) == 0 {
+			conf.ExitCodes = []int{0}
+		}
+		if conf.AutoRestart == "" {
+			conf.AutoRestart = "unexpected"
 		}
 		conf.Name = k.(string)
 		confs[conf.Name] = conf

@@ -6,9 +6,12 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sync"
+	"syscall"
 )
 
-func Run(conf *Config, logger *log.Logger) {
+func Run(conf *Config, logger *log.Logger, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// setenv
 	for key, val := range conf.Env {
 		os.Setenv(key, val)
@@ -20,11 +23,13 @@ func Run(conf *Config, logger *log.Logger) {
 		cmd.Dir = conf.WorkingDir
 	}
 
+	syscall.Umask(conf.Umask)
+
 	// set stream redirection
 	if conf.Stdout != "" {
 		file, err := os.Create(conf.Stdout)
 		if err != nil {
-			logger.Println(err)
+			logger.Println(conf.Name+":", err)
 			return
 		}
 		defer file.Close()
@@ -35,7 +40,7 @@ func Run(conf *Config, logger *log.Logger) {
 	} else if conf.Stderr != "" {
 		file, err := os.Create(conf.Stderr)
 		if err != nil {
-			logger.Println(err)
+			logger.Println(conf.Name+":", err)
 			return
 		}
 		defer file.Close()
@@ -46,7 +51,7 @@ func Run(conf *Config, logger *log.Logger) {
 	if conf.Stdin != "" {
 		file, err := os.Open(conf.Stdin)
 		if err != nil {
-			logger.Println(err)
+			logger.Println(conf.Name+":", err)
 			return
 		}
 		defer file.Close()
@@ -55,7 +60,7 @@ func Run(conf *Config, logger *log.Logger) {
 
 	err := cmd.Run()
 	if err != nil {
-		logger.Println(err)
+		logger.Println(conf.Name+":", err)
 		return
 	}
 }
@@ -83,8 +88,11 @@ func main() {
 	if err != nil {
 		panic(err) // TODO: address error
 	}
+	var wg sync.WaitGroup
 	for _, a := range confs {
 		fmt.Printf("%+v\n", a)
-		Run(&a, logger)
+		wg.Add(1)
+		go Run(&a, logger, &wg)
 	}
+	wg.Wait()
 }
