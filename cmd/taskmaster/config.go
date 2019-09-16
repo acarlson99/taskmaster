@@ -6,23 +6,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// [x] Cmd
-// [x] Args
-// [ ] NumProcs
-// [x] Umask
-// [x] WorkingDir
-// [ ] AutoStart
-// [ ] AutoRestart
-// [ ] ExitCodes
-// [ ] StartRetries
-// [ ] StartTime
-// [ ] StopSignal
-// [ ] StopTime
-// [x] Stdin
-// [x] Stdout
-// [x] Stderr
-// [x] Env
-
 type Config struct {
 	Name         string            // name of program
 	Cmd          string            `yaml:"cmd"`      // binary to run
