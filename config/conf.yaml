@@ -26,7 +26,8 @@ programs:
     workingdir: /tmp
     autostart: true
     autorestart: unexpected
-    exitcodes: 0
+    exitcodes:
+      - 0
     startretries: 3
     starttime: 5
     stopsignal: USR1
