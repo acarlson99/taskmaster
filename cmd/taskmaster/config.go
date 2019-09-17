@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"sort"
 
 	"gopkg.in/yaml.v2"
 )
@@ -55,6 +56,7 @@ func ParseConfig(filename string) (map[string]Config, error) {
 		if len(conf.ExitCodes) == 0 {
 			conf.ExitCodes = []int{0}
 		}
+		sort.Ints(conf.ExitCodes)
 		if conf.AutoRestart == "" {
 			conf.AutoRestart = "unexpected"
 		}

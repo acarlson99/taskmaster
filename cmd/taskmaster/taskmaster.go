@@ -6,12 +6,32 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
 
 	"gopkg.in/readline.v1"
 )
+
+func GoodExit(err error, codes []int) (bool, error) {
+	if exiterr, ok := err.(*exec.ExitError); ok {
+		code := exiterr.ExitCode()
+		fmt.Println(code)
+		idx := sort.Search(len(codes),
+			func(ii int) bool { return codes[ii] >= code })
+		if idx < len(codes) && codes[idx] == code {
+			// good
+			fmt.Println("GOOD EXIT")
+			return true, nil
+		} else {
+			// bad
+			fmt.Println("BAD EXIT")
+			return false, nil
+		}
+	}
+	return false, err
+}
 
 func Run(proc *Process, logger *log.Logger, wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -68,6 +88,8 @@ func Run(proc *Process, logger *log.Logger, wg *sync.WaitGroup) {
 	proc.Status = C_RUN
 	err := cmd.Run()
 	if err != nil {
+		goodexit, err := GoodExit(err, proc.Conf.ExitCodes)
+		fmt.Println(goodexit, err)
 		logger.Println(proc.Conf.Name+":", err)
 		proc.Status = C_CRASH
 		return
@@ -125,20 +147,24 @@ func main() {
 		go Run(procs[conf.Name], logger, &wg)
 	}
 
-	shell(procs)
+	shell(procs, logger, &wg)
 	wg.Wait()
 }
 
-func shell(procs map[string]*Process) {
+func shell(procs map[string]*Process, logger *log.Logger, wg *sync.WaitGroup) {
 	rl, err := readline.New("> ")
 	if err != nil {
 		panic(err)
 	}
 	defer rl.Close()
+	// rl := bufio.NewReader(os.Stdin)
 
 	for {
 		line, err := rl.Readline()
+		// line, err := rl.ReadString('\n')
 		if err != nil {
+			fmt.Println(err)
+			fmt.Printf("%T\n", err)
 			break
 		}
 
@@ -146,24 +172,36 @@ func shell(procs map[string]*Process) {
 
 		fmt.Println(args)
 
-		switch args[0] {
-		case "list", "ls", "ps":
-			fmt.Println("ps")
-			for name, proc := range procs {
-				fmt.Println(name, proc.Conf, proc.Status)
+		if len(args) > 0 {
+			switch args[0] {
+			case "list", "ls", "ps":
+				fmt.Println("ps")
+				for name, proc := range procs {
+					fmt.Println(name, proc.Conf, proc.Status)
+				}
+			case "status":
+				for _, name := range args[1:] {
+					fmt.Println(name, procs[name].Status)
+				}
+			case "start", "run":
+				fmt.Println("START LISTED PROCS")
+				for _, name := range args[1:] {
+					if procs[name] != nil {
+						wg.Add(1)
+						go Run(procs[name], logger, wg)
+					} else {
+						fmt.Println("Unable to find process with name:", name)
+					}
+				}
+			case "stop":
+				fmt.Println("STOP LISTED PROCS")
+			case "reload":
+				fmt.Println("RELOAD")
+			case "restart":
+				fmt.Println("RESTART LISTED PROCS")
+			case "quit", "exit":
+				os.Exit(0)
 			}
-		case "status":
-			for _, name := range args[1:] {
-				fmt.Println(name, procs[name].Status)
-			}
-		case "start":
-			fmt.Println("START LISTED PROCS")
-		case "stop":
-			fmt.Println("STOP LISTED PROCS")
-		case "reload":
-			fmt.Println("RELOAD")
-		case "restart":
-			fmt.Println("RESTART LISTED PROCS")
 		}
 	}
 }
