@@ -84,3 +84,4 @@ TAGS
 # Project
 /taskmaster
 /go.sum
+cmd/taskmaster/config

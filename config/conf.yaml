@@ -35,4 +35,4 @@ programs:
     stdout: /tmp/vgsworker.stdout
     stderr: /tmp/vgsworker.stderr
 
-  other:
+  # other:

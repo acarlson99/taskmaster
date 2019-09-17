@@ -126,32 +126,44 @@ func main() {
 	}
 
 	logfile, err := os.OpenFile(logname, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		panic(err)
+	}
 	defer logfile.Close()
 	logger := log.New(logfile, "taskmaster: ", log.Lshortfile|log.Ltime)
 
 	args := flag.Args()
-	confs, err := ParseConfig(args[0])
-	if err != nil {
-		panic(err) // TODO: address error
-	}
-	procs := make(map[string]*Process)
+	//
+	// confs, err := ParseConfig(args[0])
+	p := ProsChans{}
+	p.init()
+	overseer := overseer{}
+	overseer.chans.init()
+	go overseer.Run()
+	go controller(overseer.chans, p)
+	confs := updateConfig(args[0], map[string]Config{}, p)
+	// confs = updateConfig("../../config/conf2.yaml", confs, p)
+	// if err != nil {
+	// 	panic(err) // TODO: address error
+	// }
+	// procs := make(map[string]*Process)
 
-	var wg sync.WaitGroup
-	for _, conf := range confs {
-		proc := new(Process)
-		proc.Conf = conf
-		proc.Status = C_STOP
-		procs[conf.Name] = proc
-		fmt.Printf("%+v\n", conf)
-		wg.Add(1)
-		go Run(procs[conf.Name], logger, &wg)
-	}
+	// var wg sync.WaitGroup
+	// for _, conf := range confs {
+	// 	proc := new(Process)
+	// 	proc.Conf = conf
+	// 	proc.Status = C_STOP
+	// 	procs[conf.Name] = proc
+	// 	fmt.Printf("%+v\n", conf)
+	// 	wg.Add(1)
+	// 	go Run(procs[conf.Name], logger, &wg)
+	// }
 
-	shell(procs, logger, &wg)
-	wg.Wait()
+	shell(confs, logger, p)
+	// wg.Wait()
 }
 
-func shell(procs map[string]*Process, logger *log.Logger, wg *sync.WaitGroup) {
+func shell(confs map[string]Config, logger *log.Logger, p ProsChans) {
 	rl, err := readline.New("> ")
 	if err != nil {
 		panic(err)
@@ -176,26 +188,29 @@ func shell(procs map[string]*Process, logger *log.Logger, wg *sync.WaitGroup) {
 			switch args[0] {
 			case "list", "ls", "ps":
 				fmt.Println("ps")
-				for name, proc := range procs {
-					fmt.Println(name, proc.Conf, proc.Status)
+				for name := range confs {
+					// fmt.Println(name, proc.Conf, proc.Status)
+					fmt.Println(name)
 				}
 			case "status":
 				for _, name := range args[1:] {
-					fmt.Println(name, procs[name].Status)
+					// fmt.Println(name, procs[name].Status)
+					fmt.Println(name)
 				}
 			case "start", "run":
 				fmt.Println("START LISTED PROCS")
-				for _, name := range args[1:] {
-					if procs[name] != nil {
-						wg.Add(1)
-						go Run(procs[name], logger, wg)
-					} else {
-						fmt.Println("Unable to find process with name:", name)
-					}
-				}
+				// for _, name := range args[1:] {
+				// 	if procs[name] != nil {
+				// 		// wg.Add(1)
+				// 		// go Run(procs[name], logger, wg)
+				// 	} else {
+				// 		fmt.Println("Unable to find process with name:", name)
+				// 	}
+				// }
 			case "stop":
 				fmt.Println("STOP LISTED PROCS")
 			case "reload":
+				confs = updateConfig("../../config/conf2.yaml", confs, p)
 				fmt.Println("RELOAD")
 			case "restart":
 				fmt.Println("RESTART LISTED PROCS")
