@@ -12,6 +12,24 @@ type overseer struct {
 	chans OverseerPIDS
 }
 
+const (
+	C_RUN     = "running"
+	C_SETUP   = "setup"
+	C_STOP    = "stopped"
+	C_CRASH   = "crashed"
+	C_DONE    = "done"
+	C_NOSTART = "unable to start"
+)
+
+type Process struct {
+	Name     string
+	Conf     Config
+	Pid      int
+	Status   string
+	Crashes  int
+	Restarts int
+}
+
 func (o *overseer) Run() { //change string with struct of more data
 	for {
 		select {
@@ -23,12 +41,12 @@ func (o *overseer) Run() { //change string with struct of more data
 	}
 }
 
-func startProgram(ctx context.Context, o OverseerPIDS, process Config) bool {
+func startProgram(ctx context.Context, o OverseerPIDS, process Process) bool {
 	type doneSignal struct{}
-	cmd := exec.Command(process.Cmd, process.Args...)
+	cmd := exec.Command(process.Conf.Cmd, process.Conf.Args...)
 	err := cmd.Start()
 	if err != nil {
-		ok, err2 := GoodExit(err, process.ExitCodes)
+		ok, err2 := GoodExit(err, process.Conf.ExitCodes)
 		if err2 != nil {
 			log.Println(err2)
 		}
@@ -57,7 +75,7 @@ func startProgram(ctx context.Context, o OverseerPIDS, process Config) bool {
 	}
 }
 
-func container(ctx context.Context, o OverseerPIDS, process Config) {
+func container(ctx context.Context, o OverseerPIDS, process Process) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -80,7 +98,7 @@ func (o *OverseerPIDS) init() {
 	o.remove = make(chan int, 10)
 }
 
-func controller(o OverseerPIDS, p ProsChans) {
+func controller(o OverseerPIDS, p ConfigChans) {
 	ctx := context.Background()
 	cancleMap := map[string]context.CancelFunc{}
 	for {
@@ -89,7 +107,8 @@ func controller(o OverseerPIDS, p ProsChans) {
 			log.Println("Starting a new process cycle", newPros.Name)
 			ctx, cancle := context.WithCancel(ctx)
 			cancleMap[newPros.Name] = cancle
-			go container(ctx, o, newPros)
+			proc := Process{newPros.Name, newPros, 0, C_SETUP, 0, 0}
+			go container(ctx, o, proc)
 		case oldPros := <-p.oldPros:
 			log.Println("Gonna cancle:", oldPros.Name)
 			cancle := cancleMap[oldPros.Name]
@@ -98,7 +117,7 @@ func controller(o OverseerPIDS, p ProsChans) {
 	}
 }
 
-func updateConfig(file string, old map[string]Config, p ProsChans) map[string]Config {
+func updateConfig(file string, old map[string]Config, p ConfigChans) map[string]Config {
 	new, err := ParseConfig(file)
 	if err != nil {
 		panic(err) //Panic? or print erro and keep running same? or catch panic outside
@@ -120,15 +139,13 @@ func updateConfig(file string, old map[string]Config, p ProsChans) map[string]Co
 	return new
 }
 
-//ProsChans is used to pass info on what chans to stop or start
-type ProsChans struct {
+//ConfigChans is used to pass info on what chans to stop or start
+type ConfigChans struct {
 	newPros chan Config
 	oldPros chan Config
 }
 
-func (p *ProsChans) init() {
+func (p *ConfigChans) init() {
 	p.newPros = make(chan Config) //Make buffered
 	p.oldPros = make(chan Config)
 }
-
-//change Config.Name to config.Cmd

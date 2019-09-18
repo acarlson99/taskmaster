@@ -96,20 +96,6 @@ func Run(proc *Process, logger *log.Logger, wg *sync.WaitGroup) {
 	proc.Status = C_DONE
 }
 
-const (
-	C_RUN     = "running"
-	C_SETUP   = "setup"
-	C_STOP    = "stopped"
-	C_CRASH   = "crashed"
-	C_DONE    = "done"
-	C_NOSTART = "unable to start"
-)
-
-type Process struct {
-	Conf   Config
-	Status string
-}
-
 func main() {
 	flag.Usage = func() {
 		fmt.Println("usage:", os.Args[0], "[options] config.yaml")
@@ -134,7 +120,7 @@ func main() {
 	args := flag.Args()
 	//
 	// confs, err := ParseConfig(args[0])
-	p := ProsChans{}
+	p := ConfigChans{}
 	p.init()
 	overseer := overseer{}
 	overseer.chans.init()
@@ -162,7 +148,7 @@ func main() {
 	// wg.Wait()
 }
 
-func shell(confs map[string]Config, logger *log.Logger, p ProsChans) {
+func shell(confs map[string]Config, logger *log.Logger, p ConfigChans) {
 	// rl, err := readline.New("> ")
 	// if err != nil {
 	// 	panic(err)
