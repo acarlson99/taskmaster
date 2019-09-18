@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
@@ -10,8 +11,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-
-	"gopkg.in/readline.v1"
 )
 
 func GoodExit(err error, codes []int) (bool, error) {
@@ -164,16 +163,17 @@ func main() {
 }
 
 func shell(confs map[string]Config, logger *log.Logger, p ProsChans) {
-	rl, err := readline.New("> ")
-	if err != nil {
-		panic(err)
-	}
-	defer rl.Close()
-	// rl := bufio.NewReader(os.Stdin)
+	// rl, err := readline.New("> ")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer rl.Close()
+	rl := bufio.NewReader(os.Stdin)
 
 	for {
-		line, err := rl.Readline()
-		// line, err := rl.ReadString('\n')
+		// line, err := rl.Readline()
+		fmt.Printf("> ")
+		line, err := rl.ReadString('\n')
 		if err != nil {
 			fmt.Println(err)
 			fmt.Printf("%T\n", err)

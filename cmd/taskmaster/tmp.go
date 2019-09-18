@@ -23,12 +23,17 @@ func (o *overseer) Run() { //change string with struct of more data
 	}
 }
 
-func startProgram(ctx context.Context, o OverseerPIDS, process Config) {
+func startProgram(ctx context.Context, o OverseerPIDS, process Config) bool {
 	type doneSignal struct{}
-	cmd := exec.Command(process.Name, process.Args...)
+	cmd := exec.Command(process.Cmd, process.Args...)
 	err := cmd.Start()
 	if err != nil {
+		ok, err2 := GoodExit(err, process.ExitCodes)
+		if err2 != nil {
+			log.Println(err2)
+		}
 		log.Println(err)
+		return ok
 	}
 	o.add <- cmd.Process.Pid
 	defer func() {
@@ -45,10 +50,10 @@ func startProgram(ctx context.Context, o OverseerPIDS, process Config) {
 	select {
 	case <-ctx.Done():
 		log.Println("Leaving -- ctx")
-		return
+		return true // TODO: check
 	case <-cmdDone:
 		log.Println("Leaving -- program done")
-		return
+		return true // TODO: check
 	}
 }
 
