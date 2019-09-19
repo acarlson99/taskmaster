@@ -6,104 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"sort"
 	"strings"
-	"sync"
-	"syscall"
 )
 
-func GoodExit(err error, codes []int) (bool, error) {
-	if err == nil {
-		idx := sort.Search(len(codes),
-			func(ii int) bool { return codes[ii] >= 0 })
-		if idx < len(codes) && codes[idx] == 0 {
-			return true, nil
-		} else {
-			return false, nil
-		}
-	}
-	if exiterr, ok := err.(*exec.ExitError); ok {
-		code := exiterr.ExitCode()
-		fmt.Println(code)
-		idx := sort.Search(len(codes),
-			func(ii int) bool { return codes[ii] >= code })
-		if idx < len(codes) && codes[idx] == code {
-			// good
-			fmt.Println("GOOD EXIT")
-			return true, nil
-		} else {
-			// bad
-			fmt.Println("BAD EXIT")
-			return false, nil
-		}
-	}
-	return false, err
-}
-
-func Run(proc *Process, logger *log.Logger, wg *sync.WaitGroup) {
-	defer wg.Done()
-	proc.Status = C_SETUP
-	// setenv
-	for key, val := range proc.Conf.Env {
-		os.Setenv(key, val)
-	}
-	fmt.Println()
-	cmd := exec.Command(proc.Conf.Cmd, proc.Conf.Args...)
-
-	if proc.Conf.WorkingDir != "" {
-		cmd.Dir = proc.Conf.WorkingDir
-	}
-
-	syscall.Umask(proc.Conf.Umask)
-
-	// set stream redirection
-	if proc.Conf.Stdout != "" {
-		file, err := os.Create(proc.Conf.Stdout)
-		if err != nil {
-			logger.Println(proc.Conf.Name+":", err)
-			proc.Status = C_NOSTART
-			return
-		}
-		defer file.Close()
-		cmd.Stdout = file
-	}
-	if proc.Conf.Stderr == proc.Conf.Stdout {
-		cmd.Stderr = cmd.Stdout
-	} else if proc.Conf.Stderr != "" {
-		file, err := os.Create(proc.Conf.Stderr)
-		if err != nil {
-			logger.Println(proc.Conf.Name+":", err)
-			proc.Status = C_NOSTART
-			return
-		}
-		defer file.Close()
-		cmd.Stderr = file
-	}
-	// NOTE: setting stdin and stdout to the same file
-	// truncates the file before it can be read
-	if proc.Conf.Stdin != "" {
-		file, err := os.Open(proc.Conf.Stdin)
-		if err != nil {
-			logger.Println(proc.Conf.Name+":", err)
-			proc.Status = C_NOSTART
-			return
-		}
-		defer file.Close()
-		cmd.Stdin = file
-	}
-
-	proc.Status = C_RUN
-	err := cmd.Run()
-	if err != nil {
-		goodexit, err := GoodExit(err, proc.Conf.ExitCodes)
-		fmt.Println(goodexit, err)
-		logger.Println(proc.Conf.Name+":", err)
-		proc.Status = C_CRASH
-		return
-	}
-	proc.Status = C_DONE
-}
+type ProcessMap map[string][]*Process
 
 func main() {
 	flag.Usage = func() {
@@ -131,7 +37,7 @@ func main() {
 	ctrl := controller{}
 	ctrl.chans.init()
 	go ctrl.run()
-	confs := updateConfig(args[0], map[string][]*Process{}, ctrl.chans)
+	confs := UpdateConfig(args[0], map[string][]*Process{}, ctrl.chans)
 
 	shell(confs, logger, ctrl.chans)
 }
@@ -180,7 +86,7 @@ func shell(confs ProcessMap, logger *log.Logger, p ProcChans) {
 			case "stop":
 				fmt.Println("STOP LISTED PROCS")
 			case "reload":
-				// confs = updateConfig("../../config/conf2.yaml", confs, p)
+				// confs = UpdateConfig("../../config/conf2.yaml", confs, p)
 				fmt.Println("RELOAD")
 			case "restart":
 				fmt.Println("RESTART LISTED PROCS")

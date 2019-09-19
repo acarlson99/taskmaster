@@ -32,7 +32,7 @@ func (c *controller) run() {
 			ctx, cancle := context.WithCancel(ctx)
 			cancleMap[newPros.Name] = cancle
 			fmt.Println(ctx)
-			go container(ctx, newPros)
+			go ProcContainer(ctx, newPros)
 		case oldPros := <-c.chans.oldPros:
 			log.Println("Gonna cancle:", oldPros.Name)
 			cancle := cancleMap[oldPros.Name]
