@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 )
 
 //Controller is used to stop / start process
@@ -28,13 +27,13 @@ func (c *controller) run() {
 	for {
 		select {
 		case newPros := <-c.chans.newPros:
-			log.Println("Starting a new process cycle", newPros.Name)
+			logger.Println("Starting a new process cycle", newPros.Name)
 			ctx, cancle := context.WithCancel(ctx)
 			cancleMap[newPros.Name] = cancle
 			fmt.Println(ctx)
 			go ProcContainer(ctx, newPros)
 		case oldPros := <-c.chans.oldPros:
-			log.Println("Gonna cancle:", oldPros.Name)
+			logger.Println("Gonna cancle:", oldPros.Name)
 			cancle := cancleMap[oldPros.Name]
 			cancle()
 		}

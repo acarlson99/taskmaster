@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"os/exec"
 	"strconv"
 )
@@ -79,9 +78,9 @@ func RunProcess(ctx context.Context, process *Process) ProcExit {
 	if err != nil {
 		// 	ok, err2 := CheckExit(err, process.Conf.ExitCodes)
 		// 	if err2 != nil {
-		// 		log.Println(err2)
+		// 		logger.Println(err2)
 		// 	}
-		log.Println(err)
+		logger.Println(err)
 		return P_NoStart
 	}
 	process.Pid = cmd.Process.Pid
@@ -95,31 +94,31 @@ func RunProcess(ctx context.Context, process *Process) ProcExit {
 		err = cmd.Wait()
 		ok, err := CheckExit(err, process.Conf.ExitCodes)
 		if err != nil {
-			log.Println(err)
+			logger.Println(err)
 		}
 		cmdDone <- ok
 		// if err != nil {
-		// 	log.Println(err)
+		// 	logger.Println(err)
 		// }
 		// cmdDone <- doneSignal{}
 	}()
 	select {
 	case <-ctx.Done():
-		log.Println("Leaving -- ctx")
+		logger.Println("Leaving -- ctx")
 		cmd.Process.Signal(process.Conf.Sig)
 		// TODO: wait
 		// hard kill
 		err := cmd.Process.Kill()
 		if err != nil {
-			log.Println(err)
+			logger.Println(err)
 		}
 		return P_Killed // TODO: check
 	case ok := <-cmdDone:
 		if ok {
-			log.Println("Leaving -- program done")
+			logger.Println("Leaving -- program done")
 			return P_Ok
 		} else {
-			log.Println("Leaving -- program crash")
+			logger.Println("Leaving -- program crash")
 			return P_Crash
 		}
 	}
@@ -137,7 +136,7 @@ func ProcContainer(ctx context.Context, process *Process) {
 	}
 }
 
-// func Run(proc *Process, logger *log.Logger, wg *sync.WaitGroup) {
+// func Run(proc *Process, logger *logger.Logger, wg *sync.WaitGroup) {
 // 	defer wg.Done()
 // 	proc.Status = C_SETUP
 // 	// setenv
