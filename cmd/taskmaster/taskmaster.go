@@ -37,7 +37,8 @@ func main() {
 	go ctrl.run()
 	confs := UpdateConfig(args[0], map[string][]*Process{}, ctrl.chans)
 
-	shell(confs, logger, ctrl.chans)
+	// shell(confs, logger, ctrl.chans)
+	runGocui(confs, logger, ctrl.chans)
 }
 
 func shell(procs ProcessMap, logger *log.Logger, p ProcChans) {
