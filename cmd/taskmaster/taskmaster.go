@@ -9,8 +9,6 @@ import (
 	"strings"
 )
 
-type ProcessMap map[string][]*Process
-
 func main() {
 	flag.Usage = func() {
 		fmt.Println("usage:", os.Args[0], "[options] config.yaml")
@@ -42,7 +40,7 @@ func main() {
 	shell(confs, logger, ctrl.chans)
 }
 
-func shell(confs ProcessMap, logger *log.Logger, p ProcChans) {
+func shell(procs ProcessMap, logger *log.Logger, p ProcChans) {
 	// rl, err := readline.New("> ")
 	// if err != nil {
 	// 	panic(err)
@@ -52,6 +50,9 @@ func shell(confs ProcessMap, logger *log.Logger, p ProcChans) {
 
 	for {
 		// line, err := rl.Readline()
+		for _, proc := range procs {
+			fmt.Println(proc)
+		}
 		fmt.Printf("> ")
 		line, err := rl.ReadString('\n')
 		if err != nil {
@@ -67,10 +68,10 @@ func shell(confs ProcessMap, logger *log.Logger, p ProcChans) {
 		if len(args) > 0 {
 			switch args[0] {
 			case "list", "ls", "ps":
-				fmt.Println(confs)
+				fmt.Println(procs)
 			case "status":
 				for _, name := range args[1:] {
-					fmt.Println(name, confs[name])
+					fmt.Println(name, procs[name])
 					fmt.Println(name)
 				}
 			case "start", "run":
@@ -86,7 +87,7 @@ func shell(confs ProcessMap, logger *log.Logger, p ProcChans) {
 			case "stop":
 				fmt.Println("STOP LISTED PROCS")
 			case "reload":
-				// confs = UpdateConfig("../../config/conf2.yaml", confs, p)
+				// procs = UpdateConfig("../../config/conf2.yaml", procs, p)
 				fmt.Println("RELOAD")
 			case "restart":
 				fmt.Println("RESTART LISTED PROCS")

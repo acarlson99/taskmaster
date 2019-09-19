@@ -27,6 +27,8 @@ type Process struct {
 	Restarts int
 }
 
+type ProcessMap map[string][]*Process
+
 func (p Process) String() string {
 	return fmt.Sprintf("%s %d %s", p.Name, p.Pid, p.Status)
 }
