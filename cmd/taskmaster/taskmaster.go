@@ -120,13 +120,16 @@ func main() {
 	args := flag.Args()
 	//
 	// confs, err := ParseConfig(args[0])
-	p := ConfigChans{}
-	p.init()
-	overseer := overseer{}
-	overseer.chans.init()
-	go overseer.Run()
-	go controller(overseer.chans, p)
-	confs := updateConfig(args[0], map[string]Config{}, p)
+	// p := ConfigChans{}
+	// p.init()
+	// // overseer := overseer{}
+	// overseer.chans.init()
+	// go overseer.Run()
+	ctrl := controller{}
+	ctrl.chans.init()
+	go ctrl.run()
+	confs := updateConfig(args[0], map[string][]*Process{}, ctrl.chans)
+
 	// confs = updateConfig("../../config/conf2.yaml", confs, p)
 	// if err != nil {
 	// 	panic(err) // TODO: address error
@@ -144,11 +147,12 @@ func main() {
 	// 	go Run(procs[conf.Name], logger, &wg)
 	// }
 
-	shell(confs, logger, p)
+	shell(confs, logger, ctrl.chans)
+
 	// wg.Wait()
 }
 
-func shell(confs map[string]Config, logger *log.Logger, p ConfigChans) {
+func shell(confs ProcessMap, logger *log.Logger, p ProcChans) {
 	// rl, err := readline.New("> ")
 	// if err != nil {
 	// 	panic(err)
@@ -173,11 +177,7 @@ func shell(confs map[string]Config, logger *log.Logger, p ConfigChans) {
 		if len(args) > 0 {
 			switch args[0] {
 			case "list", "ls", "ps":
-				fmt.Println("ps")
-				for name := range confs {
-					// fmt.Println(name, proc.Conf, proc.Status)
-					fmt.Println(name)
-				}
+				fmt.Println(confs)
 			case "status":
 				for _, name := range args[1:] {
 					// fmt.Println(name, procs[name].Status)
@@ -196,7 +196,7 @@ func shell(confs map[string]Config, logger *log.Logger, p ConfigChans) {
 			case "stop":
 				fmt.Println("STOP LISTED PROCS")
 			case "reload":
-				confs = updateConfig("../../config/conf2.yaml", confs, p)
+				// confs = updateConfig("../../config/conf2.yaml", confs, p)
 				fmt.Println("RELOAD")
 			case "restart":
 				fmt.Println("RESTART LISTED PROCS")
