@@ -4,4 +4,5 @@ programs:
     args:
       - 5
     starttime: 3
-    NumProcs: 1
+    numprocs: 1
+    stopsignal: TERM
