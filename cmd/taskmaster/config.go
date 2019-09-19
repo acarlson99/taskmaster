@@ -3,13 +3,16 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sort"
+	"syscall"
 
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	Name         string            // name of program
+	Name         string // name of program
+	Sig          os.Signal
 	Cmd          string            `yaml:"cmd"`      // binary to run
 	Args         []string          `yaml:"args"`     // list of args
 	NumProcs     int               `yaml:"numprocs"` // number of processes
@@ -54,6 +57,8 @@ func ParseConfig(filename string) (map[string]Config, error) {
 		}
 
 		// set defaults
+		// TODO: set signal properly
+		conf.Sig = syscall.SIGINT
 		if len(conf.ExitCodes) == 0 {
 			conf.ExitCodes = []int{0}
 		}

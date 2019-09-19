@@ -9,6 +9,8 @@ import (
 	"strconv"
 )
 
+type ProcExit int
+
 const (
 	C_RUN     = "running"
 	C_SETUP   = "setup"
@@ -16,6 +18,11 @@ const (
 	C_CRASH   = "crashed"
 	C_DONE    = "done"
 	C_NOSTART = "unable to start"
+
+	P_Ok ProcExit = iota
+	P_Crash
+	P_NoStart
+	P_Killed
 )
 
 type Process struct {
@@ -65,7 +72,7 @@ func (p ProcessMap) String() string {
 	return b.String()
 }
 
-func StartProcess(ctx context.Context, process *Process) bool {
+func RunProcess(ctx context.Context, process *Process) ProcExit {
 	type doneSignal struct{}
 	cmd := exec.Command(process.Conf.Cmd, process.Conf.Args...)
 	err := cmd.Start()
@@ -75,7 +82,7 @@ func StartProcess(ctx context.Context, process *Process) bool {
 		// 		log.Println(err2)
 		// 	}
 		log.Println(err)
-		return false
+		return P_NoStart
 	}
 	process.Pid = cmd.Process.Pid
 	process.Status = C_RUN
@@ -83,21 +90,38 @@ func StartProcess(ctx context.Context, process *Process) bool {
 		process.Pid = 0
 		process.Status = C_DONE // change to crash or w/e later
 	}()
-	cmdDone := make(chan doneSignal)
+	cmdDone := make(chan bool)
 	go func() {
 		err = cmd.Wait()
+		ok, err := CheckExit(err, process.Conf.ExitCodes)
 		if err != nil {
 			log.Println(err)
 		}
-		cmdDone <- doneSignal{}
+		cmdDone <- ok
+		// if err != nil {
+		// 	log.Println(err)
+		// }
+		// cmdDone <- doneSignal{}
 	}()
 	select {
 	case <-ctx.Done():
 		log.Println("Leaving -- ctx")
-		return true // TODO: check
-	case <-cmdDone:
-		log.Println("Leaving -- program done")
-		return true // TODO: check
+		cmd.Process.Signal(process.Conf.Sig)
+		// TODO: wait
+		// hard kill
+		err := cmd.Process.Kill()
+		if err != nil {
+			log.Println(err)
+		}
+		return P_Killed // TODO: check
+	case ok := <-cmdDone:
+		if ok {
+			log.Println("Leaving -- program done")
+			return P_Ok
+		} else {
+			log.Println("Leaving -- program crash")
+			return P_Crash
+		}
 	}
 }
 
@@ -108,7 +132,7 @@ func ProcContainer(ctx context.Context, process *Process) {
 			fmt.Println("Getting out of ProcContainer, ctx is done")
 			return
 		default:
-			StartProcess(ctx, process) //Pass Context to here too? to terminate process?
+			RunProcess(ctx, process) //Pass Context to here too? to terminate process?
 		}
 	}
 }
