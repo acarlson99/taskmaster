@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"sort"
 
@@ -26,40 +25,6 @@ type Config struct {
 	Stdout       string            `yaml:"stdout"`       // stdout redirect file
 	Stderr       string            `yaml:"stderr"`       // stderr redirect file
 	Env          map[string]string `yaml:"env"`          // map of env vars
-}
-
-//ConfigChans is used to pass info on what chans to stop or start
-type ConfigChans struct {
-	newPros chan Config
-	oldPros chan Config
-}
-
-func (p *ConfigChans) init() {
-	p.newPros = make(chan Config) // TODO: Make buffered
-	p.oldPros = make(chan Config)
-}
-
-// update config based on file, old configs.  Store info in ConfigChans
-func updateConfig(file string, old map[string]Config, p ConfigChans) map[string]Config {
-	new, err := ParseConfig(file)
-	if err != nil {
-		panic(err) //Panic? or print erro and keep running same? or catch panic outside
-	}
-	for i, value := range new {
-		_, ok := old[i]
-		if !ok {
-			fmt.Println("new:", value.Name)
-			p.newPros <- value //new
-		} else { //already running
-			fmt.Println("deleted")
-			delete(old, i)
-		}
-	}
-	for _, value := range old { //left over programs
-		fmt.Println("old")
-		p.oldPros <- value
-	}
-	return new
 }
 
 func ParseConfig(filename string) (map[string]Config, error) {
