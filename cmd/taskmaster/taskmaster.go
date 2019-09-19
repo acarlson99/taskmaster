@@ -127,40 +127,16 @@ func main() {
 	logger := log.New(logfile, "taskmaster: ", log.Lshortfile|log.Ltime)
 
 	args := flag.Args()
-	//
-	// confs, err := ParseConfig(args[0])
-	// p := ConfigChans{}
-	// p.init()
-	// // overseer := overseer{}
-	// overseer.chans.init()
-	// go overseer.Run()
+
 	ctrl := controller{}
 	ctrl.chans.init()
 	go ctrl.run()
 	confs := updateConfig(args[0], map[string][]*Process{}, ctrl.chans)
 
-	// confs = updateConfig("../../config/conf2.yaml", confs, p)
-	// if err != nil {
-	// 	panic(err) // TODO: address error
-	// }
-	// procs := make(map[string]*Process)
-
-	// var wg sync.WaitGroup
-	// for _, conf := range confs {
-	// 	proc := new(Process)
-	// 	proc.Conf = conf
-	// 	proc.Status = C_STOP
-	// 	procs[conf.Name] = proc
-	// 	fmt.Printf("%+v\n", conf)
-	// 	wg.Add(1)
-	// 	go Run(procs[conf.Name], logger, &wg)
-	// }
-
-	shell(confs, logger, overseer, p)
-	// wg.Wait()
+	shell(confs, logger, ctrl.chans)
 }
 
-func shell(confs map[string]Config, logger *log.Logger, o overseer, p ConfigChans) {
+func shell(confs ProcessMap, logger *log.Logger, p ProcChans) {
 	// rl, err := readline.New("> ")
 	// if err != nil {
 	// 	panic(err)

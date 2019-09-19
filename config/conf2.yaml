@@ -4,3 +4,4 @@ programs:
     args:
       - 5
     starttime: 3
+    NumProcs: 1

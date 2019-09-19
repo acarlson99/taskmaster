@@ -20,8 +20,10 @@ func startProgram(ctx context.Context, process *Process) bool {
 		return false
 	}
 	process.Pid = cmd.Process.Pid
+	process.Status = C_RUN
 	defer func() {
 		process.Pid = 0
+		process.Status = C_DONE // change to crash or w/e later
 	}()
 	cmdDone := make(chan doneSignal)
 	go func() {
