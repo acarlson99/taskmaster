@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -17,10 +16,10 @@ const (
 	ih = 3
 )
 
-func runGocui(procs ProcessMap, logger *log.Logger, p ProcChans) {
+func runGocui(procs ProcessMap, p ProcChans) {
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
-		log.Println("Failed to create a GUI:", err)
+		logger.Println("Failed to create a GUI:", err)
 		return
 	}
 	defer g.Close()
@@ -31,12 +30,12 @@ func runGocui(procs ProcessMap, logger *log.Logger, p ProcChans) {
 	//keybind
 	err = g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
 	if err != nil {
-		log.Println("Could not set key binding:", err)
+		logger.Println("Could not set key binding:", err)
 		return
 	}
 	err = g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, input)
 	if err != nil {
-		log.Println("Cannot bind the enter key:", err)
+		logger.Println("Cannot bind the enter key:", err)
 	}
 
 	tw, th := g.Size()
@@ -44,7 +43,7 @@ func runGocui(procs ProcessMap, logger *log.Logger, p ProcChans) {
 	lv, err := g.SetView("list", 0, 0, lw, th-1)
 
 	if err != nil && err != gocui.ErrUnknownView {
-		log.Println("Failed to create main view:", err)
+		logger.Println("Failed to create main view:", err)
 		return
 	}
 	lv.Title = "List"
@@ -52,7 +51,7 @@ func runGocui(procs ProcessMap, logger *log.Logger, p ProcChans) {
 	//output
 	ov, err := g.SetView("output", lw+1, 0, tw-1, th-ih-1)
 	if err != nil && err != gocui.ErrUnknownView {
-		log.Println("Failed to create output view:", err)
+		logger.Println("Failed to create output view:", err)
 		return
 	}
 	ov.Title = "Output"
@@ -61,12 +60,12 @@ func runGocui(procs ProcessMap, logger *log.Logger, p ProcChans) {
 	ov.Autoscroll = true
 	_, err = fmt.Fprintln(ov, "Press Ctrl-c to quit")
 	if err != nil {
-		log.Println("Failed to print into output view:", err)
+		logger.Println("Failed to print into output view:", err)
 	}
 	//input
 	iv, err := g.SetView("input", lw+1, th-ih, tw-1, th-1)
 	if err != nil && err != gocui.ErrUnknownView {
-		log.Println("Failed to create input view:", err)
+		logger.Println("Failed to create input view:", err)
 		return
 	}
 	iv.Title = "Input"
@@ -75,7 +74,7 @@ func runGocui(procs ProcessMap, logger *log.Logger, p ProcChans) {
 	iv.Editable = true
 	err = iv.SetCursor(0, 0)
 	if err != nil {
-		log.Println("Failed to set cursor:", err)
+		logger.Println("Failed to set cursor:", err)
 		return
 	}
 
@@ -83,11 +82,11 @@ func runGocui(procs ProcessMap, logger *log.Logger, p ProcChans) {
 
 	_, err = g.SetCurrentView("input")
 	if err != nil {
-		log.Println("Cannot set focus to input view:", err)
+		logger.Println("Cannot set focus to input view:", err)
 	}
 
 	err = g.MainLoop()
-	log.Println("Main loop has finished:", err)
+	logger.Println("Main loop has finished:", err)
 }
 
 func updateStatusView(g *gocui.Gui, procs *ProcessMap) {
@@ -110,7 +109,7 @@ func updateStatusView(g *gocui.Gui, procs *ProcessMap) {
 func input(g *gocui.Gui, v *gocui.View) error {
 	iv, e := g.View("input")
 	if e != nil {
-		log.Println("Cannot get output view:", e)
+		logger.Println("Cannot get output view:", e)
 		return e
 	}
 
@@ -118,7 +117,7 @@ func input(g *gocui.Gui, v *gocui.View) error {
 
 	ov, e := g.View("output")
 	if e != nil {
-		log.Println("Cannot get output view:", e)
+		logger.Println("Cannot get output view:", e)
 		return e
 	}
 	line := iv.Buffer()
@@ -134,14 +133,14 @@ func input(g *gocui.Gui, v *gocui.View) error {
 
 	_, e = fmt.Fprint(ov, iv.Buffer())
 	if e != nil {
-		log.Println("Cannot print to output view:", e)
+		logger.Println("Cannot print to output view:", e)
 	}
 
 	iv.Clear()
 
 	e = iv.SetCursor(0, 0)
 	if e != nil {
-		log.Println("Failed to set cursor:", e)
+		logger.Println("Failed to set cursor:", e)
 	}
 	return e
 }

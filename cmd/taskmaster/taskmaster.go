@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var logger *log.Logger
+
 func main() {
 	flag.Usage = func() {
 		fmt.Println("usage:", os.Args[0], "[options] config.yaml")
@@ -28,7 +30,7 @@ func main() {
 		panic(err)
 	}
 	defer logfile.Close()
-	logger := log.New(logfile, "taskmaster: ", log.Lshortfile|log.Ltime)
+	logger = log.New(logfile, "taskmaster: ", log.Lshortfile|log.Ltime)
 
 	args := flag.Args()
 
@@ -37,11 +39,11 @@ func main() {
 	go ctrl.run()
 	confs := UpdateConfig(args[0], map[string][]*Process{}, ctrl.chans)
 
-	// shell(confs, logger, ctrl.chans)
-	runGocui(confs, logger, ctrl.chans)
+	// shell(confs, ctrl.chans)
+	runGocui(confs, ctrl.chans)
 }
 
-func shell(procs ProcessMap, logger *log.Logger, p ProcChans) {
+func shell(procs ProcessMap, p ProcChans) {
 	// rl, err := readline.New("> ")
 	// if err != nil {
 	// 	panic(err)
