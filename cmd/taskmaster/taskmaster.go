@@ -14,6 +14,15 @@ import (
 )
 
 func GoodExit(err error, codes []int) (bool, error) {
+	if err == nil {
+		idx := sort.Search(len(codes),
+			func(ii int) bool { return codes[ii] >= 0 })
+		if idx < len(codes) && codes[idx] == 0 {
+			return true, nil
+		} else {
+			return false, nil
+		}
+	}
 	if exiterr, ok := err.(*exec.ExitError); ok {
 		code := exiterr.ExitCode()
 		fmt.Println(code)
@@ -144,11 +153,11 @@ func main() {
 	// 	go Run(procs[conf.Name], logger, &wg)
 	// }
 
-	shell(confs, logger, p)
+	shell(confs, logger, overseer, p)
 	// wg.Wait()
 }
 
-func shell(confs map[string]Config, logger *log.Logger, p ConfigChans) {
+func shell(confs map[string]Config, logger *log.Logger, o overseer, p ConfigChans) {
 	// rl, err := readline.New("> ")
 	// if err != nil {
 	// 	panic(err)
@@ -180,7 +189,7 @@ func shell(confs map[string]Config, logger *log.Logger, p ConfigChans) {
 				}
 			case "status":
 				for _, name := range args[1:] {
-					// fmt.Println(name, procs[name].Status)
+					fmt.Println(name, confs[name])
 					fmt.Println(name)
 				}
 			case "start", "run":

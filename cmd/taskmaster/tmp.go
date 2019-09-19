@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"time"
 )
 
 type overseer struct {
-	Pids  *map[int]string
+	Pids *map[int]string
+	// Procs map[string]map[int]Process
 	chans OverseerPIDS
 }
 
@@ -57,21 +59,36 @@ func startProgram(ctx context.Context, o OverseerPIDS, process Process) bool {
 	defer func() {
 		o.remove <- cmd.Process.Pid
 	}()
-	cmdDone := make(chan doneSignal)
+	cmdDone := make(chan bool)
+	process.Status = C_SETUP
 	go func() {
 		err = cmd.Wait()
-		if err != nil {
+		ok, err := GoodExit(err, process.Conf.ExitCodes)
+		if err != nil || !ok {
 			log.Println(err)
+			cmdDone <- false
+		} else {
+			cmdDone <- true
 		}
-		cmdDone <- doneSignal{}
 	}()
-	select {
-	case <-ctx.Done():
-		log.Println("Leaving -- ctx")
-		return true // TODO: check
-	case <-cmdDone:
-		log.Println("Leaving -- program done")
-		return true // TODO: check
+	timer := time.NewTimer(time.Duration(process.Conf.StartTime) * time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Leaving -- ctx")
+			return true // TODO: check
+		case ok := <-cmdDone:
+			if ok {
+				log.Println("Leaving -- program done")
+			} else {
+				log.Println("Leaving -- Program crashed")
+			}
+			return true // TODO: check
+		case <-timer.C:
+			process.Status = C_RUN
+			fmt.Println("SUCCESSFULLY STARTED", process.Name)
+			timer.Stop()
+		}
 	}
 }
 
