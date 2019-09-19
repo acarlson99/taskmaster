@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/jroimartin/gocui"
@@ -77,7 +79,7 @@ func runGocui(procs ProcessMap, logger *log.Logger, p ProcChans) {
 		return
 	}
 
-	go test(g, &procs)
+	go updateStatusView(g, &procs)
 
 	_, err = g.SetCurrentView("input")
 	if err != nil {
@@ -88,8 +90,7 @@ func runGocui(procs ProcessMap, logger *log.Logger, p ProcChans) {
 	log.Println("Main loop has finished:", err)
 }
 
-func test(g *gocui.Gui, procs *ProcessMap) {
-	tmp := 0
+func updateStatusView(g *gocui.Gui, procs *ProcessMap) {
 	for {
 		select {
 		case <-time.After(500 * time.Millisecond):
@@ -100,7 +101,6 @@ func test(g *gocui.Gui, procs *ProcessMap) {
 				}
 				v.Clear()
 				fmt.Fprintln(v, procs)
-				tmp++
 				return nil
 			})
 		}
@@ -120,6 +120,16 @@ func input(g *gocui.Gui, v *gocui.View) error {
 	if e != nil {
 		log.Println("Cannot get output view:", e)
 		return e
+	}
+	line := iv.Buffer()
+	args := strings.Fields(line)
+	switch args[0] {
+	case "status":
+	case "start", "run":
+	case "stop":
+	case "reload":
+	case "quit":
+		os.Exit(0)
 	}
 
 	_, e = fmt.Fprint(ov, iv.Buffer())
