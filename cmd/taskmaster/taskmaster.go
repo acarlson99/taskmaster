@@ -37,11 +37,13 @@ func main() {
 
 	ctrl := controller{}
 	ctrl.chans.init()
-	go ctrl.run()
+	waitchan := make(chan interface{})
+	go ctrl.run(waitchan)
 	configFile = args[0]
 	confs := UpdateConfig(configFile, map[string][]*Process{}, ctrl.chans)
 
 	runUI(confs, ctrl.chans)
+	<-waitchan
 }
 
 func shell(procs ProcessMap, p ProcChans) {

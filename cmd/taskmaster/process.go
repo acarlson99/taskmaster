@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strconv"
+	"sync"
+	"time"
 )
 
 type ProcExit int
@@ -47,19 +49,12 @@ func ConfigToProcess(configs map[string]Config) ProcessMap {
 	tmp := ProcessMap{}
 	for _, config := range configs {
 		procSlice := []*Process{}
-		if numOfProcess := config.NumProcs; numOfProcess > 1 {
-			for i := 0; i < numOfProcess; i++ {
-				proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_SETUP, 0, 0}
-				// proc := Process{MakeName(i, config), config, 0, C_SETUP, 0, 0}
-				procSlice = append(procSlice, &proc)
-			}
-			tmp[config.Name] = procSlice
-		} else {
-			proc := Process{config.Name, config, 0, C_SETUP, 0, 0}
-			// proc := Process{MakeName(0, config), config, 0, C_SETUP, 0, 0}
+		for i := 0; i < config.NumProcs; i++ {
+			proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_SETUP, 0, 0}
+			// proc := Process{MakeName(i, config), config, 0, C_SETUP, 0, 0}
 			procSlice = append(procSlice, &proc)
-			tmp[config.Name] = procSlice
 		}
+		tmp[config.Name] = procSlice
 	}
 	return tmp
 }
@@ -110,27 +105,33 @@ func RunProcess(ctx context.Context, process *Process) ProcExit {
 	}()
 	select {
 	case <-ctx.Done():
-		// logger.Println("Leaving -- ctx")
-		cmd.Process.Signal(process.Conf.Sig)
-		// TODO: wait
-		// hard kill
-		err := cmd.Process.Kill()
+		err := cmd.Process.Signal(process.Conf.Sig)
 		if err != nil {
 			logger.Println(err)
 		}
-		return P_Killed // TODO: check
+		// TODO: wait
+		time.Sleep(time.Duration(process.Conf.StopTime) * time.Second)
+		// hard kill
+		err = cmd.Process.Signal(process.Conf.Sig)
+		if err != nil {
+			logger.Println("Unable to exit proc", process.Name+"- killing")
+			err := cmd.Process.Kill()
+			if err != nil {
+				logger.Println(process.Name, err)
+			}
+		}
+		return P_Killed
 	case ok := <-cmdDone:
 		if ok {
-			// logger.Println("Leaving -- program done")
 			return P_Ok
 		} else {
-			// logger.Println("Leaving -- program crash")
 			return P_Crash
 		}
 	}
 }
 
-func ProcContainer(ctx context.Context, process *Process) {
+func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for {
 		select {
 		case <-ctx.Done():
