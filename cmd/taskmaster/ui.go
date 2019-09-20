@@ -124,12 +124,20 @@ func updateStatusView(g *gocui.Gui, procs *ProcessMap) {
 func handleCommand(args []string, procs *ProcessMap, p ProcChans, f func(tmp []*Process, index int)) {
 	if len(args) > 2 {
 		if tmp, ok := (*procs)[args[1]]; ok {
-			index, err := strconv.Atoi(args[2])
-			if err != nil {
-				logger.Println("atoi fialed", err)
-				return
+			for _, arg := range args[2:] {
+				index, err := strconv.Atoi(arg)
+				if err != nil {
+					logger.Println("atoi fialed", err)
+					return
+				}
+				f(tmp, index)
 			}
-			f(tmp, index)
+		}
+	} else {
+		if tmp, ok := (*procs)[args[1]]; ok {
+			for idx := range tmp {
+				f(tmp, idx)
+			}
 		}
 	}
 }
@@ -151,7 +159,7 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 			handleCommand(args, procs, p, func(tmp []*Process, index int) {
 				p.newPros <- tmp[index]
 			})
-		case "stop":
+		case "stop", "kill":
 			handleCommand(args, procs, p, func(tmp []*Process, index int) {
 				p.oldPros <- tmp[index]
 			})

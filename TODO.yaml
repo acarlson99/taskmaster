@@ -1,6 +1,6 @@
 TODO:
   - check to add locks to avoid race conditions
-  - set signal properly
+  - set signal properly - Maybe works.  Need to test
   - restart only when necessary
   - improve UI
   - check if config has been changed
@@ -12,7 +12,7 @@ TODO:
     - autostart
     - autorestart
     - startretries
-    - starttime //set to time 
+    - starttime //set to time
     - stoptime
     - stdin
     - stdout
