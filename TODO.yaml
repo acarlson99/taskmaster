@@ -1,0 +1,20 @@
+TODO:
+  - check to add locks to avoid race conditions
+  - set signal properly
+  - restart only when necessary
+  - improve UI
+  - check if config has been changed
+  - handle stdin/stdout for multiple instances of process
+  - make sure we handle duplicate process names
+  - handle other args:
+    - umask
+    - workingdir
+    - autostart
+    - autorestart
+    - startretries
+    - starttime
+    - stoptime
+    - stdin
+    - stdout
+    - stderr
+    - env
