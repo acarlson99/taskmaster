@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -126,6 +127,21 @@ func wrap(procs *ProcessMap, p ProcChans) func(g *gocui.Gui, v *gocui.View) erro
 		case "status":
 		case "start", "run":
 		case "stop":
+			if len(args) > 2 {
+				if tmp, ok := (*procs)[args[1]]; ok {
+					index, err := strconv.Atoi(args[2]) //error checking
+					if err != nil {
+						logger.Println("atoi fialed", e)
+						return err
+					}
+					p.oldPros <- tmp[index]
+				} else {
+					_, e = fmt.Fprint(ov, "invalid process")
+					if e != nil {
+						logger.Println("Cannot print to output view:", e)
+					}
+				}
+			}
 		case "reload":
 			*procs = UpdateConfig("../../config/conf2.yaml", *procs, p)
 		}

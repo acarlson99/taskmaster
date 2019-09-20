@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -102,23 +102,21 @@ func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 		panic(err) //Panic? or print erro and keep running same? or catch panic outside
 	}
 	tmp := ConfigToProcess(new)
-	// fmt.Println(tmp)
 	for i, slices := range tmp {
 		_, ok := old[i]
 		if !ok {
-			// fmt.Println("new:", i)
 			for _, v := range slices {
-				p.newPros <- v //new -- Pass it the slice, so we can stop or start them all?
+				p.newPros <- v //Addeding
 			}
 		} else { //already running
-			// fmt.Println("deleted") // do a diff to see if conf has been changed
+			tmp[i] = old[i]
+			//need to check if it's been changed or not and restarted?
 			delete(old, i)
 		}
 	}
-	for _, slices := range old { //left over programs
-		// fmt.Println("old")
+	for _, slices := range old {
 		for _, v := range slices {
-			p.oldPros <- v //new
+			p.oldPros <- v //removing
 		}
 	}
 	return tmp
