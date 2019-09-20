@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -33,7 +32,8 @@ func runGocui(procs ProcessMap, p ProcChans) {
 		logger.Println("Could not set key binding:", err)
 		return
 	}
-	err = g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, input)
+	fnk := wrap(&procs, p)
+	err = g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, fnk)
 	if err != nil {
 		logger.Println("Cannot bind the enter key:", err)
 	}
@@ -105,45 +105,83 @@ func updateStatusView(g *gocui.Gui, procs *ProcessMap) {
 		}
 	}
 }
+func wrap(procs *ProcessMap, p ProcChans) func(g *gocui.Gui, v *gocui.View) error {
+	return func(g *gocui.Gui, v *gocui.View) error {
+		iv, e := g.View("input")
+		if e != nil {
+			logger.Println("Cannot get output view:", e)
+			return e
+		}
 
-func input(g *gocui.Gui, v *gocui.View) error {
-	iv, e := g.View("input")
-	if e != nil {
-		logger.Println("Cannot get output view:", e)
+		iv.Rewind()
+
+		ov, e := g.View("output")
+		if e != nil {
+			logger.Println("Cannot get output view:", e)
+			return e
+		}
+		line := iv.Buffer()
+		args := strings.Fields(line)
+		switch args[0] {
+		case "status":
+		case "start", "run":
+		case "stop":
+		case "reload":
+			*procs = UpdateConfig("../../config/conf2.yaml", *procs, p)
+		}
+
+		_, e = fmt.Fprint(ov, iv.Buffer())
+		if e != nil {
+			logger.Println("Cannot print to output view:", e)
+		}
+
+		iv.Clear()
+
+		e = iv.SetCursor(0, 0)
+		if e != nil {
+			logger.Println("Failed to set cursor:", e)
+		}
 		return e
 	}
-
-	iv.Rewind()
-
-	ov, e := g.View("output")
-	if e != nil {
-		logger.Println("Cannot get output view:", e)
-		return e
-	}
-	line := iv.Buffer()
-	args := strings.Fields(line)
-	switch args[0] {
-	case "status":
-	case "start", "run":
-	case "stop":
-	case "reload":
-	case "quit":
-		os.Exit(0)
-	}
-
-	_, e = fmt.Fprint(ov, iv.Buffer())
-	if e != nil {
-		logger.Println("Cannot print to output view:", e)
-	}
-
-	iv.Clear()
-
-	e = iv.SetCursor(0, 0)
-	if e != nil {
-		logger.Println("Failed to set cursor:", e)
-	}
-	return e
 }
+
+// func input(g *gocui.Gui, v *gocui.View, procs *ProcessMap) error {
+// 	iv, e := g.View("input")
+// 	if e != nil {
+// 		logger.Println("Cannot get output view:", e)
+// 		return e
+// 	}
+
+// 	iv.Rewind()
+
+// 	ov, e := g.View("output")
+// 	if e != nil {
+// 		logger.Println("Cannot get output view:", e)
+// 		return e
+// 	}
+// 	line := iv.Buffer()
+// 	args := strings.Fields(line)
+// 	switch args[0] {
+// 	case "status":
+// 	case "start", "run":
+// 	case "stop":
+// 	case "reload":
+// 		*proc = updateConfig("../../config/conf2.yaml", *procs)
+// 	}
+
+// 	_, e = fmt.Fprint(ov, iv.Buffer())
+// 	if e != nil {
+// 		logger.Println("Cannot print to output view:", e)
+// 	}
+
+// 	iv.Clear()
+
+// 	e = iv.SetCursor(0, 0)
+// 	if e != nil {
+// 		logger.Println("Failed to set cursor:", e)
+// 	}
+// 	return e
+// }
 
 func layout(g *gocui.Gui) error {
 

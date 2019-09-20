@@ -128,7 +128,7 @@ func ProcContainer(ctx context.Context, process *Process) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("Getting out of ProcContainer, ctx is done")
+			// fmt.Println("Getting out of ProcContainer, ctx is done")
 			return
 		default:
 			RunProcess(ctx, process) //Pass Context to here too? to terminate process?
