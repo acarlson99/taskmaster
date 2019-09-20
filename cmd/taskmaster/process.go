@@ -35,6 +35,10 @@ type Process struct {
 
 type ProcessMap map[string][]*Process
 
+func (p Process) FullStatusString() string {
+	return fmt.Sprintln("*******STAUS*******\n", p.Conf, "\n Crashes:", p.Crashes, "\n Restarts:", p.Restarts)
+}
+
 func (p Process) String() string {
 	return fmt.Sprintf("%s %d %s", p.Name, p.Pid, p.Status)
 }

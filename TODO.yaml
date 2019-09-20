@@ -12,7 +12,7 @@ TODO:
     - autostart
     - autorestart
     - startretries
-    - starttime
+    - starttime //set to time 
     - stoptime
     - stdin
     - stdout

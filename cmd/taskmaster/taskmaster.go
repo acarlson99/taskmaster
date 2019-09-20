@@ -41,8 +41,7 @@ func main() {
 	configFile = args[0]
 	confs := UpdateConfig(configFile, map[string][]*Process{}, ctrl.chans)
 
-	// shell(confs, ctrl.chans)
-	runGocui(confs, ctrl.chans)
+	runUI(confs, ctrl.chans)
 }
 
 func shell(procs ProcessMap, p ProcChans) {

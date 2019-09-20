@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -28,6 +29,31 @@ type Config struct {
 	Stdout       string            `yaml:"stdout"`       // stdout redirect file
 	Stderr       string            `yaml:"stderr"`       // stderr redirect file
 	Env          map[string]string `yaml:"env"`          // map of env vars
+}
+
+func (c Config) String() string {
+	format := `Cmd:         %s
+	Args:        %s
+	AutoStart:   %t
+	AutoRestart: %s
+	Umask:       %d
+	startRetries %d
+	--Ouputs-----
+	Stdin:       %s
+	Stdout:      %s
+	Stderr:      %s
+	WorkingDir:  %s 
+	--Times------
+	StartTime:  %d
+	StopTime:   %d
+	StopSignal: %s
+	--Env--------
+	Env:	%V`
+	return fmt.Sprintf(format,
+		c.Cmd, c.Args, c.AutoStart, c.AutoRestart, c.Umask, c.StartRetries,
+		c.Stdin, c.Stdout, c.Stderr, c.WorkingDir,
+		c.StartTime, c.StopTime, c.StopSignal,
+		c.Env)
 }
 
 func ParseConfig(filename string) (map[string]Config, error) {
