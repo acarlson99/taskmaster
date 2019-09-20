@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
-	"strconv"
-	"strings"
 	"syscall"
 
 	"gopkg.in/yaml.v2"
@@ -15,7 +12,6 @@ import (
 type Config struct {
 	Name         string // name of program
 	Sig          os.Signal
-	NameFmt      string            `yaml:"namefmt"`  // format string for proc name
 	Cmd          string            `yaml:"cmd"`      // binary to run
 	Args         []string          `yaml:"args"`     // list of args
 	NumProcs     int               `yaml:"numprocs"` // number of processes
@@ -32,12 +28,6 @@ type Config struct {
 	Stdout       string            `yaml:"stdout"`       // stdout redirect file
 	Stderr       string            `yaml:"stderr"`       // stderr redirect file
 	Env          map[string]string `yaml:"env"`          // map of env vars
-}
-
-func MakeName(num int, conf Config) string {
-	return strings.ReplaceAll(strings.ReplaceAll(conf.NameFmt,
-		"$NUM", strconv.Itoa(num)),
-		"$NAME", conf.Name)
 }
 
 func ParseConfig(filename string) (map[string]Config, error) {
@@ -65,24 +55,8 @@ func ParseConfig(filename string) (map[string]Config, error) {
 			return confs, err
 		}
 
-		if len(conf.NameFmt) != 0 {
-			if !strings.Contains(conf.NameFmt, "$NAME") {
-				return confs,
-					fmt.Errorf("namefmt field must contain $NAME: %s",
-						conf.Name)
-			} else if conf.NumProcs != 0 &&
-				!(strings.Contains(conf.NameFmt, "$NUM")) {
-				return confs,
-					fmt.Errorf("namefmt field must contain $NUM when numprocs != 0: %s",
-						conf.Name)
-			}
-		}
-
 		// set defaults
 		conf.Sig = syscall.SIGINT // TODO: set signal properly
-		if len(conf.NameFmt) == 0 {
-			conf.NameFmt = "$NAME - $NUM"
-		}
 		if len(conf.ExitCodes) == 0 {
 			conf.ExitCodes = []int{0}
 		}
@@ -99,6 +73,7 @@ func ParseConfig(filename string) (map[string]Config, error) {
 func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 	new, err := ParseConfig(file) //Make it return ProcessMap?
 	if err != nil {
+		logger.Println(err)
 		panic(err) //Panic? or print erro and keep running same? or catch panic outside
 	}
 	tmp := ConfigToProcess(new)

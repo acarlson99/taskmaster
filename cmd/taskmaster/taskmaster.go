@@ -10,6 +10,7 @@ import (
 )
 
 var logger *log.Logger
+var configFile string
 
 func main() {
 	flag.Usage = func() {
@@ -37,7 +38,8 @@ func main() {
 	ctrl := controller{}
 	ctrl.chans.init()
 	go ctrl.run()
-	confs := UpdateConfig(args[0], map[string][]*Process{}, ctrl.chans)
+	configFile = args[0]
+	confs := UpdateConfig(configFile, map[string][]*Process{}, ctrl.chans)
 
 	// shell(confs, ctrl.chans)
 	runGocui(confs, ctrl.chans)

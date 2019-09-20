@@ -106,6 +106,7 @@ func updateStatusView(g *gocui.Gui, procs *ProcessMap) {
 		}
 	}
 }
+
 func wrap(procs *ProcessMap, p ProcChans) func(g *gocui.Gui, v *gocui.View) error {
 	return func(g *gocui.Gui, v *gocui.View) error {
 		iv, e := g.View("input")
@@ -123,39 +124,42 @@ func wrap(procs *ProcessMap, p ProcChans) func(g *gocui.Gui, v *gocui.View) erro
 		}
 		line := iv.Buffer()
 		args := strings.Fields(line)
-		switch args[0] {
-		case "status":
-		case "start", "run":
-		case "stop":
-			if len(args) > 2 {
-				if tmp, ok := (*procs)[args[1]]; ok {
-					index, err := strconv.Atoi(args[2]) //error checking
-					if err != nil {
-						logger.Println("atoi fialed", e)
-						return err
-					}
-					p.oldPros <- tmp[index]
-				} else {
-					_, e = fmt.Fprint(ov, "invalid process")
-					if e != nil {
-						logger.Println("Cannot print to output view:", e)
+		if len(args) > 0 {
+			switch args[0] {
+			case "status":
+			case "start", "run":
+			case "stop":
+				if len(args) > 2 {
+					if tmp, ok := (*procs)[args[1]]; ok {
+						index, err := strconv.Atoi(args[2]) //error checking
+						if err != nil {
+							logger.Println("atoi fialed", e)
+							break
+							// return err
+						}
+						p.oldPros <- tmp[index]
+					} else {
+						_, e = fmt.Fprint(ov, "invalid process")
+						if e != nil {
+							logger.Println("Cannot print to output view:", e)
+						}
 					}
 				}
+			case "reload":
+				*procs = UpdateConfig(configFile, *procs, p)
 			}
-		case "reload":
-			*procs = UpdateConfig("../../config/conf2.yaml", *procs, p)
-		}
 
-		_, e = fmt.Fprint(ov, iv.Buffer())
-		if e != nil {
-			logger.Println("Cannot print to output view:", e)
-		}
+			_, e = fmt.Fprint(ov, iv.Buffer())
+			if e != nil {
+				logger.Println("Cannot print to output view:", e)
+			}
 
-		iv.Clear()
+			iv.Clear()
 
-		e = iv.SetCursor(0, 0)
-		if e != nil {
-			logger.Println("Failed to set cursor:", e)
+			e = iv.SetCursor(0, 0)
+			if e != nil {
+				logger.Println("Failed to set cursor:", e)
+			}
 		}
 		return e
 	}
