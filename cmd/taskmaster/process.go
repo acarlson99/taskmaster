@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"strconv"
 )
 
 type ProcExit int
@@ -45,12 +44,14 @@ func ConfigToProcess(configs map[string]Config) ProcessMap {
 		procSlice := []*Process{}
 		if numOfProcess := config.NumProcs; numOfProcess > 1 {
 			for i := 0; i < numOfProcess; i++ {
-				proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_SETUP, 0, 0}
+				// proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_SETUP, 0, 0}
+				proc := Process{MakeName(i, config), config, 0, C_SETUP, 0, 0}
 				procSlice = append(procSlice, &proc)
 			}
 			tmp[config.Name] = procSlice
 		} else {
-			proc := Process{config.Name, config, 0, C_SETUP, 0, 0}
+			// proc := Process{config.Name, config, 0, C_SETUP, 0, 0}
+			proc := Process{MakeName(0, config), config, 0, C_SETUP, 0, 0}
 			procSlice = append(procSlice, &proc)
 			tmp[config.Name] = procSlice
 		}
