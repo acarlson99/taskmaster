@@ -26,7 +26,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logfile, err := os.OpenFile(logname, os.O_RDWR|os.O_CREATE, 0644)
+	logfile, err := os.OpenFile(logname, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		panic(err)
 	}

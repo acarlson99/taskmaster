@@ -32,6 +32,11 @@ func (c *controller) run(waitchan chan interface{}) {
 	for {
 		select {
 		case newPros := <-c.chans.newPros:
+			if _, ok := cancleMap[newPros.Name]; ok {
+				logger.Println("Unable to start process",
+					newPros.Name+": process already running")
+				continue
+			}
 			logger.Println("Starting a new process cycle", newPros.Name)
 			ctx, cancle := context.WithCancel(ctx)
 			cancleMap[newPros.Name] = cancle
@@ -40,12 +45,17 @@ func (c *controller) run(waitchan chan interface{}) {
 		case oldPros := <-c.chans.oldPros:
 			logger.Println("Gonna cancle:", oldPros.Name)
 			cancle := cancleMap[oldPros.Name]
-			cancle()
+			if cancle != nil {
+				cancle()
+				delete(cancleMap, oldPros.Name)
+			} else {
+				logger.Println("Unable to cancle:", oldPros.Name)
+			}
 		case <-c.chans.Killall:
-			logger.Println("AAAAAAAAAAAAA")
+			logger.Println("Leaving application.  Killing child processes")
 			for name, f := range cancleMap {
-				logger.Println("KILLING", name)
 				f()
+				delete(cancleMap, name)
 			}
 			wg.Wait()
 			waitchan <- 1

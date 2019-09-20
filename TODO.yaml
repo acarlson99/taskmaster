@@ -6,6 +6,7 @@ TODO:
   - check if config has been changed
   - handle stdin/stdout for multiple instances of process
   - make sure we handle duplicate process names
+  - fix reload
   - handle other args:
     - umask
     - workingdir

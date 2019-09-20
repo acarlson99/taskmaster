@@ -121,7 +121,7 @@ func updateStatusView(g *gocui.Gui, procs *ProcessMap) {
 	}
 }
 
-func handleCommand(args []string, procs *ProcessMap, p ProcChans, f func(tmp []*Process, index int)) {
+func handleCommand(args []string, procs *ProcessMap, p ProcChans, ov *gocui.View, f func(tmp []*Process, index int)) {
 	if len(args) > 2 {
 		if tmp, ok := (*procs)[args[1]]; ok {
 			for _, arg := range args[2:] {
@@ -133,12 +133,14 @@ func handleCommand(args []string, procs *ProcessMap, p ProcChans, f func(tmp []*
 				f(tmp, index)
 			}
 		}
-	} else {
+	} else if len(args) == 2 {
 		if tmp, ok := (*procs)[args[1]]; ok {
 			for idx := range tmp {
 				f(tmp, idx)
 			}
 		}
+	} else {
+		fmt.Fprintf(ov, "Command %s needs args\n", args[0])
 	}
 }
 
@@ -149,18 +151,19 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 		case "clear":
 			ov.Clear()
 		case "status":
-			handleCommand(args, procs, p, func(tmp []*Process, index int) {
-				_, e := fmt.Fprint(ov, tmp[index].FullStatusString())
-				if e != nil {
-					logger.Println("Cannot print to output view:", e)
-				}
-			})
+			handleCommand(args, procs, p, ov,
+				func(tmp []*Process, index int) {
+					_, e := fmt.Fprint(ov, tmp[index].FullStatusString())
+					if e != nil {
+						logger.Println("Cannot print to output view:", e)
+					}
+				})
 		case "start", "run":
-			handleCommand(args, procs, p, func(tmp []*Process, index int) {
+			handleCommand(args, procs, p, ov, func(tmp []*Process, index int) {
 				p.newPros <- tmp[index]
 			})
 		case "stop", "kill":
-			handleCommand(args, procs, p, func(tmp []*Process, index int) {
+			handleCommand(args, procs, p, ov, func(tmp []*Process, index int) {
 				p.oldPros <- tmp[index]
 			})
 		case "reload":
@@ -171,15 +174,15 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 			status
 				- Shows the status of a processes
 			start, run
-				- 'start [process name] [index]'   will start the process
-			stop
-				- 'stop [process name] [index]'   will stop the process
+				- 'start name [index]'   start all processes called name or use index
+			stop, kill
+				- 'stop [process name] [index]'   stop process
 			reload
-				- will reload the config file
+				- reload config file
 			help
-				- will show this prompt again
+				- show this prompt again
 			clear
-				- will clear the screen`
+				- clear screen`
 			_, e := fmt.Fprint(ov, help)
 			if e != nil {
 				logger.Println("Cannot print to output view:", e)
@@ -187,6 +190,7 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 		}
 	}
 }
+
 func wrap(procs *ProcessMap, p ProcChans) func(g *gocui.Gui, v *gocui.View) error {
 	return func(g *gocui.Gui, v *gocui.View) error {
 		iv, e := g.View("input")
