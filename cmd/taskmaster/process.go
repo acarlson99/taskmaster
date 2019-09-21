@@ -143,7 +143,8 @@ func RunProcess(ctx context.Context, process *Process,
 
 	<-envlock
 	oldUmask := syscall.Umask(process.Conf.Umask)
-	starttime := time.Now()
+	// starttime := time.Now()
+	ticker := time.NewTicker(time.Duration(process.Conf.StartTime) * time.Second)
 	err = cmd.Start()
 	syscall.Umask(oldUmask)
 	envlock <- 1
@@ -153,10 +154,10 @@ func RunProcess(ctx context.Context, process *Process,
 		return P_NoStart
 	}
 	process.Pid = cmd.Process.Pid
-	process.Status = C_RUN
+	process.Status = C_SETUP
 	defer func() {
 		process.Pid = 0
-		process.Status = C_DONE // change to crash or w/e later
+		// process.Status = C_DONE // change to crash or w/e later
 	}()
 	cmdDone := make(chan bool)
 	go func() {
@@ -171,32 +172,39 @@ func RunProcess(ctx context.Context, process *Process,
 		// }
 		// cmdDone <- doneSignal{}
 	}()
-	select {
-	case <-ctx.Done():
-		err := cmd.Process.Signal(process.Conf.Sig)
-		if err != nil {
-			logger.Println(err)
-		}
-		// wait
-		time.Sleep(time.Duration(process.Conf.StopTime) * time.Second)
-		// hard kill
-		err = cmd.Process.Signal(process.Conf.Sig)
-		if err != nil {
-			logger.Println("Unable to exit proc", process.Name+". Killing")
-			err := cmd.Process.Kill()
+	started := false
+	for {
+		select {
+		case <-ticker.C:
+			started = true
+			process.Status = C_RUN
+			ticker.Stop()
+		case <-ctx.Done():
+			err := cmd.Process.Signal(process.Conf.Sig)
 			if err != nil {
-				logger.Println(process.Name, err)
+				logger.Println(err)
 			}
-		}
-		return P_Killed
-	case ok := <-cmdDone:
-		if ok {
-			return P_Ok
-		} else {
-			if process.Conf.StartTime == 0 || time.Since(starttime) >
-				time.Duration(process.Conf.StartTime)*time.Second {
+			// wait
+			time.Sleep(time.Duration(process.Conf.StopTime) * time.Second)
+			// hard kill
+			err = cmd.Process.Signal(process.Conf.Sig)
+			if err != nil {
+				logger.Println("Unable to exit proc", process.Name+". Killing")
+				err := cmd.Process.Kill()
+				if err != nil {
+					logger.Println(process.Name, err)
+				}
+			}
+			return P_Killed
+		case ok := <-cmdDone:
+			if ok {
+				process.Status = C_DONE
+				return P_Ok
+			} else if process.Conf.StartTime == 0 || started {
+				process.Status = C_CRASH
 				return P_Crash
 			} else {
+				process.Status = C_NOSTART
 				return P_NoStart
 			}
 		}

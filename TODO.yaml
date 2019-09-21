@@ -4,6 +4,7 @@ TODO:
   - improve UI
   - check if config has been changed
   - fix reload
+  - standardize log messages
 
 DONE:
   - set signal properly
