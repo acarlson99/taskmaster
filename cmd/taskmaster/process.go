@@ -224,14 +224,14 @@ func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
 		case P_ConfErr:
 			logger.Println(process.Name, "Error configuring process")
 		}
-		if numRestarts == 0 || process.Conf.AutoRestart == "never" {
-			return
-		} else if process.Conf.AutoRestart == "always" ||
-			(process.Conf.AutoRestart == "sometimes" && r == P_NoStart) {
+		if numRestarts != 0 && (process.Conf.AutoRestart == "always" ||
+			(process.Conf.AutoRestart == "sometimes" && r == P_NoStart)) {
 			logger.Println(process.Name, "Retrying")
 			if numRestarts > 0 {
 				numRestarts--
 			}
+		} else {
+			return
 		}
 	}
 }
