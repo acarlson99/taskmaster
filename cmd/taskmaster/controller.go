@@ -43,7 +43,7 @@ func (c *controller) run(waitchan chan interface{}) {
 			ctx, cancle := context.WithCancel(ctx)
 			cancleMap[newPros.Name] = cancle
 			wg.Add(1)
-			go ProcContainer(ctx, newPros, &wg, envlock)
+			go ProcContainer(ctx, newPros, &wg, envlock, c.chans.oldPros)
 		case oldPros := <-c.chans.oldPros:
 			logger.Println("Gonna cancle:", oldPros.Name)
 			cancle := cancleMap[oldPros.Name]

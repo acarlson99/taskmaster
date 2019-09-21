@@ -1,20 +1,17 @@
 TODO:
   - check to add locks to avoid race conditions
-  - restart only when necessary
   - improve UI
   - check if config has been changed
-  - handle stdin/stdout for multiple instances of process
   - fix reload
   - args:
     - autostart
-    - autorestart
-    - startretries
-    - starttime //set to time
     - env
 
 DONE:
   - set signal properly
   - make sure we handle duplicate process names
+  - restart only when necessary
+  - handle stdin/stdout for multiple instances of process
   - args:
     - umask
     - workingdir
@@ -22,3 +19,6 @@ DONE:
     - stdin
     - stdout
     - stderr
+    - autorestart
+    - startretries
+    - starttime

@@ -26,6 +26,7 @@ const (
 	P_Crash
 	P_NoStart
 	P_Killed
+	P_ConfErr
 )
 
 type Process struct {
@@ -84,6 +85,7 @@ func filecleanup(openfiles []*os.File) {
 }
 
 func ConfigureProcess(cmd *exec.Cmd, conf *Config) (func(), error) {
+	// TODO: fix.  Env not set properly
 	env := os.Environ()
 	for name, val := range conf.Env {
 		env = append(env, fmt.Sprintf("%s=%s", name, val))
@@ -140,15 +142,12 @@ func RunProcess(ctx context.Context, process *Process,
 
 	<-envlock
 	oldUmask := syscall.Umask(process.Conf.Umask)
+	starttime := time.Now()
 	err = cmd.Start()
 	syscall.Umask(oldUmask)
 	envlock <- 1
 
 	if err != nil {
-		// 	ok, err2 := CheckExit(err, process.Conf.ExitCodes)
-		// 	if err2 != nil {
-		// 		logger.Println(err2)
-		// 	}
 		logger.Println(err)
 		return P_NoStart
 	}
@@ -193,21 +192,48 @@ func RunProcess(ctx context.Context, process *Process,
 		if ok {
 			return P_Ok
 		} else {
-			return P_Crash
+			if process.Conf.StartTime == 0 || time.Since(starttime) >
+				time.Duration(process.Conf.StartTime)*time.Second {
+				return P_Crash
+			} else {
+				return P_NoStart
+			}
 		}
 	}
 }
 
 func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
-	envlock chan interface{}) {
+	envlock chan interface{}, donechan chan *Process) {
 	defer wg.Done()
+	defer func() { donechan <- process }()
+	numRestarts := process.Conf.StartRetries
 	for {
-		select {
-		case <-ctx.Done():
-			// fmt.Println("Getting out of ProcContainer, ctx is done")
+		r := RunProcess(ctx, process, envlock) //Pass Context to here too? to terminate process?
+		switch r {
+		case P_Ok:
 			return
-		default:
-			RunProcess(ctx, process, envlock) //Pass Context to here too? to terminate process?
+		case P_Crash:
+			logger.Println("Crashed")
+			process.Crashes++
+			if process.Conf.RetryBM&BM_ALWAYS != 0 {
+				logger.Println("Retrying")
+				numRestarts--
+				if numRestarts < 0 {
+					return
+				}
+			}
+		case P_NoStart:
+			logger.Println("No start")
+			if process.Conf.RetryBM&BM_SOMETIMES != 0 {
+				numRestarts--
+				if numRestarts < 0 {
+					return
+				}
+			}
+		case P_Killed:
+			return
+		case P_ConfErr:
+			return
 		}
 	}
 }

@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Name         string // name of program
 	Sig          os.Signal
+	RetryBM      int
 	Cmd          string            `yaml:"cmd"`      // binary to run
 	Args         []string          `yaml:"args"`     // list of args
 	NumProcs     int               `yaml:"numprocs"` // number of processes
@@ -30,6 +31,11 @@ type Config struct {
 	Stderr       string            `yaml:"stderr"`       // stderr redirect file
 	Env          map[string]string `yaml:"env"`          // map of env vars
 }
+
+const (
+	BM_ALWAYS    = 0b10
+	BM_SOMETIMES = 0b01
+)
 
 var thing = map[string]os.Signal{
 	"ABRT": syscall.SIGABRT,
@@ -135,6 +141,21 @@ func ParseConfig(filename string) (map[string]Config, error) {
 			return confs, err
 		}
 
+		if ok := confmap["autorestart"]; ok == nil {
+			conf.AutoRestart = "never"
+		}
+		switch conf.AutoRestart {
+		case "always":
+			conf.RetryBM = BM_ALWAYS | BM_SOMETIMES
+		case "sometimes":
+			conf.RetryBM = BM_SOMETIMES
+		case "never":
+			conf.RetryBM = 0
+		default:
+			return confs,
+				fmt.Errorf("Bad option for autorestart: %s.  always/sometimes/never",
+					conf.AutoRestart)
+		}
 		if ok := confmap["umask"]; ok == nil {
 			conf.Umask = 022
 		}
