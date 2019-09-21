@@ -1,11 +1,9 @@
 TODO:
+  - fix status updates/info
   - check to add locks to avoid race conditions
   - improve UI
   - check if config has been changed
   - fix reload
-  - args:
-    - autostart
-    - env
 
 DONE:
   - set signal properly
@@ -22,3 +20,5 @@ DONE:
     - autorestart
     - startretries
     - starttime
+    - env
+    - autostart

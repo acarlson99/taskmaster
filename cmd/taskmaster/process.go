@@ -90,6 +90,7 @@ func ConfigureProcess(cmd *exec.Cmd, conf *Config) (func(), error) {
 	for name, val := range conf.Env {
 		env = append(env, fmt.Sprintf("%s=%s", name, val))
 	}
+	cmd.Env = env
 
 	if conf.WorkingDir != "" {
 		cmd.Dir = conf.WorkingDir

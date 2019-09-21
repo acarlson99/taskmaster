@@ -19,7 +19,7 @@ type Config struct {
 	NumProcs     int               `yaml:"numprocs"` // number of processes
 	Umask        int               `yaml:"umask"`    // int representing permissions
 	WorkingDir   string            `yaml:"workingdir"`
-	AutoStart    bool              `yaml:"autostart"`    // true/false (default: false)
+	AutoStart    bool              `yaml:"autostart"`    // true/false (default: true)
 	AutoRestart  string            `yaml:"autorestart"`  // always/never/unexpected (defult: never)
 	ExitCodes    []int             `yaml:"exitcodes"`    // expected exit codes (default: 0)
 	StartRetries int               `yaml:"startretries"` // times to retry if unexpected exit
@@ -141,6 +141,9 @@ func ParseConfig(filename string) (map[string]Config, error) {
 			return confs, err
 		}
 
+		if ok := confmap["autostart"]; ok == nil {
+			conf.AutoStart = true
+		}
 		if ok := confmap["autorestart"]; ok == nil {
 			conf.AutoRestart = "never"
 		}
@@ -193,11 +196,13 @@ func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 		_, ok := old[i]
 		if !ok {
 			for _, v := range slices {
-				p.newPros <- v //Addeding
+				if v.Conf.AutoStart {
+					p.newPros <- v //Addeding
+				}
 			}
 		} else { //already running
 			tmp[i] = old[i]
-			//need to check if it's been changed or not and restarted?
+			// TODO: need to check if it's been changed or not and restarted?
 			delete(old, i)
 		}
 	}
