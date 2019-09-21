@@ -27,6 +27,8 @@ func (p *ProcChans) init() {
 
 func (c *controller) run(waitchan chan interface{}) {
 	var wg sync.WaitGroup
+	envlock := make(chan interface{}, 1)
+	envlock <- 1
 	ctx := context.Background()                  //Make args
 	cancleMap := map[string]context.CancelFunc{} //make args	//process && cancle()
 	for {
@@ -41,7 +43,7 @@ func (c *controller) run(waitchan chan interface{}) {
 			ctx, cancle := context.WithCancel(ctx)
 			cancleMap[newPros.Name] = cancle
 			wg.Add(1)
-			go ProcContainer(ctx, newPros, &wg)
+			go ProcContainer(ctx, newPros, &wg, envlock)
 		case oldPros := <-c.chans.oldPros:
 			logger.Println("Gonna cancle:", oldPros.Name)
 			cancle := cancleMap[oldPros.Name]

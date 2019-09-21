@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -36,6 +38,7 @@ type Process struct {
 }
 
 type ProcessMap map[string][]*Process
+type doneSignal struct{}
 
 func (p Process) FullStatusString() string {
 	return fmt.Sprintln("*******STAUS*******\n", p.Conf, "\n Crashes:", p.Crashes, "\n Restarts:", p.Restarts)
@@ -72,10 +75,75 @@ func (p ProcessMap) String() string {
 	return b.String()
 }
 
-func RunProcess(ctx context.Context, process *Process) ProcExit {
-	type doneSignal struct{}
+func filecleanup(openfiles []*os.File) {
+	for _, file := range openfiles {
+		if file != nil {
+			file.Close()
+		}
+	}
+}
+
+func ConfigureProcess(cmd *exec.Cmd, conf *Config) (func(), error) {
+	env := os.Environ()
+	for name, val := range conf.Env {
+		env = append(env, fmt.Sprintf("%s=%s", name, val))
+	}
+
+	if conf.WorkingDir != "" {
+		cmd.Dir = conf.WorkingDir
+	}
+
+	openfiles := []*os.File{}
+	if conf.Stdout != "" {
+		file, err := os.OpenFile(conf.Stdout,
+			os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			logger.Println(conf.Name+":", err)
+			return func() { filecleanup(openfiles) }, err
+		}
+		openfiles = append(openfiles, file)
+		cmd.Stdout = file
+	}
+	if conf.Stderr == conf.Stdout {
+		cmd.Stderr = cmd.Stdout
+	} else if conf.Stderr != "" {
+		file, err := os.OpenFile(conf.Stdout,
+			os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			logger.Println(conf.Name+":", err)
+			return func() { filecleanup(openfiles) }, err
+		}
+		openfiles = append(openfiles, file)
+		cmd.Stderr = file
+	}
+	if conf.Stdin != "" {
+		file, err := os.Open(conf.Stdin)
+		if err != nil {
+			logger.Println(conf.Name+":", err)
+			return func() { filecleanup(openfiles) }, err
+		}
+		openfiles = append(openfiles, file)
+		cmd.Stdin = file
+	}
+	return func() { filecleanup(openfiles) }, nil
+}
+
+func RunProcess(ctx context.Context, process *Process,
+	envlock chan interface{}) ProcExit {
 	cmd := exec.Command(process.Conf.Cmd, process.Conf.Args...)
-	err := cmd.Start()
+	cleanup, err := ConfigureProcess(cmd, &process.Conf)
+	defer cleanup()
+	if err != nil {
+		logger.Println(err)
+		process.Status = C_NOSTART
+	}
+
+	<-envlock
+	oldUmask := syscall.Umask(process.Conf.Umask)
+	err = cmd.Start()
+	syscall.Umask(oldUmask)
+	envlock <- 1
+
 	if err != nil {
 		// 	ok, err2 := CheckExit(err, process.Conf.ExitCodes)
 		// 	if err2 != nil {
@@ -109,7 +177,7 @@ func RunProcess(ctx context.Context, process *Process) ProcExit {
 		if err != nil {
 			logger.Println(err)
 		}
-		// TODO: wait
+		// wait
 		time.Sleep(time.Duration(process.Conf.StopTime) * time.Second)
 		// hard kill
 		err = cmd.Process.Signal(process.Conf.Sig)
@@ -130,7 +198,8 @@ func RunProcess(ctx context.Context, process *Process) ProcExit {
 	}
 }
 
-func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup) {
+func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
+	envlock chan interface{}) {
 	defer wg.Done()
 	for {
 		select {
@@ -138,7 +207,7 @@ func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup) {
 			// fmt.Println("Getting out of ProcContainer, ctx is done")
 			return
 		default:
-			RunProcess(ctx, process) //Pass Context to here too? to terminate process?
+			RunProcess(ctx, process, envlock) //Pass Context to here too? to terminate process?
 		}
 	}
 }

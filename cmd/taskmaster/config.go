@@ -129,7 +129,16 @@ func ParseConfig(filename string) (map[string]Config, error) {
 		}
 
 		// set defaults
-		if conf.StopTime < 0 {
+		confmap := make(map[interface{}]interface{})
+		err = yaml.Unmarshal(data, &confmap)
+		if err != nil {
+			return confs, err
+		}
+
+		if ok := confmap["umask"]; ok == nil {
+			conf.Umask = 022
+		}
+		if ok := confmap["umask"]; ok == nil || conf.StopTime < 0 {
 			conf.StopTime = 0
 		}
 		if len(conf.StopSignal) == 0 {

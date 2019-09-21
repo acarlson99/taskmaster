@@ -1,21 +1,24 @@
 TODO:
   - check to add locks to avoid race conditions
-  - set signal properly - Maybe works.  Need to test
   - restart only when necessary
   - improve UI
   - check if config has been changed
   - handle stdin/stdout for multiple instances of process
-  - make sure we handle duplicate process names
   - fix reload
-  - handle other args:
-    - umask
-    - workingdir
+  - args:
     - autostart
     - autorestart
     - startretries
     - starttime //set to time
+    - env
+
+DONE:
+  - set signal properly
+  - make sure we handle duplicate process names
+  - args:
+    - umask
+    - workingdir
     - stoptime
     - stdin
     - stdout
     - stderr
-    - env
