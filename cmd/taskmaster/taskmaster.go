@@ -42,7 +42,11 @@ func main() {
 	configFile = args[0]
 	confs := UpdateConfig(configFile, map[string][]*Process{}, ctrl.chans)
 
-	runUI(confs, ctrl.chans)
+	err = runUI(confs, ctrl.chans)
+	if err != nil {
+		fmt.Println("Unable to run visualizer.  Exiting")
+		close(ctrl.chans.Killall)
+	}
 	<-waitchan
 }
 

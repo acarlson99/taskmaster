@@ -144,7 +144,7 @@ func ParseConfig(filename string) (map[string]Config, error) {
 		if ok := confmap["umask"]; ok == nil {
 			conf.Umask = 022
 		}
-		if ok := confmap["umask"]; ok == nil || conf.StopTime < 0 {
+		if ok := confmap["stoptime"]; ok == nil || conf.StopTime < 0 {
 			conf.StopTime = 0
 		}
 		if len(conf.StopSignal) == 0 {

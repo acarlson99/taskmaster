@@ -34,11 +34,11 @@ func setKeyBindings(procs ProcessMap, p ProcChans, g *gocui.Gui) {
 	}
 }
 
-func runUI(procs ProcessMap, p ProcChans) {
+func runUI(procs ProcessMap, p ProcChans) error {
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
 		logger.Println("Failed to create a GUI:", err)
-		return
+		return err
 	}
 	defer g.Close()
 
@@ -54,7 +54,7 @@ func runUI(procs ProcessMap, p ProcChans) {
 
 		if err != nil && err != gocui.ErrUnknownView {
 			logger.Println("Failed to create main view:", err)
-			return
+			return err
 		}
 		lv.Title = "List"
 		lv.FgColor = gocui.ColorCyan
@@ -64,7 +64,7 @@ func runUI(procs ProcessMap, p ProcChans) {
 		ov, err := g.SetView("output", lw+1, 0, tw-1, th-ih-1)
 		if err != nil && err != gocui.ErrUnknownView {
 			logger.Println("Failed to create output view:", err)
-			return
+			return err
 		}
 		ov.Title = "Output"
 		ov.FgColor = gocui.ColorGreen
@@ -80,7 +80,7 @@ func runUI(procs ProcessMap, p ProcChans) {
 		iv, err := g.SetView("input", lw+1, th-ih, tw-1, th-1)
 		if err != nil && err != gocui.ErrUnknownView {
 			logger.Println("Failed to create input view:", err)
-			return
+			return err
 		}
 		iv.Title = "Input"
 		iv.FgColor = gocui.ColorYellow
@@ -89,7 +89,7 @@ func runUI(procs ProcessMap, p ProcChans) {
 		err = iv.SetCursor(0, 0)
 		if err != nil {
 			logger.Println("Failed to set cursor:", err)
-			return
+			return err
 		}
 	}
 
@@ -102,6 +102,7 @@ func runUI(procs ProcessMap, p ProcChans) {
 
 	err = g.MainLoop()
 	logger.Println("Main loop has finished:", err)
+	return nil
 }
 
 func updateStatusView(g *gocui.Gui, procs *ProcessMap) {
