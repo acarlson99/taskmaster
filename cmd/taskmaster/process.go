@@ -212,29 +212,26 @@ func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
 		r := RunProcess(ctx, process, envlock) //Pass Context to here too? to terminate process?
 		switch r {
 		case P_Ok:
-			return
+			logger.Println(process.Name, "Ok")
 		case P_Crash:
-			logger.Println("Crashed")
+			logger.Println(process.Name, "Crashed")
 			process.Crashes++
-			if process.Conf.RetryBM&BM_ALWAYS != 0 {
-				logger.Println("Retrying")
-				numRestarts--
-				if numRestarts < 0 {
-					return
-				}
-			}
 		case P_NoStart:
-			logger.Println("No start")
-			if process.Conf.RetryBM&BM_SOMETIMES != 0 {
-				numRestarts--
-				if numRestarts < 0 {
-					return
-				}
-			}
+			logger.Println(process.Name, "Unable to start")
 		case P_Killed:
+			logger.Println(process.Name, "Killed by user")
 			return
 		case P_ConfErr:
+			logger.Println(process.Name, "Error configuring process")
+		}
+		if numRestarts == 0 || process.Conf.AutoRestart == "never" {
 			return
+		} else if process.Conf.AutoRestart == "always" ||
+			(process.Conf.AutoRestart == "sometimes" && r == P_NoStart) {
+			logger.Println(process.Name, "Retrying")
+			if numRestarts > 0 {
+				numRestarts--
+			}
 		}
 	}
 }
