@@ -20,7 +20,7 @@ func setKeyBindings(procs *ProcessMap, p ProcChans, g *gocui.Gui) {
 	//keybind
 	err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
-			close(p.Killall)
+			// close(p.Killall)
 			return quit(g, v)
 		})
 	if err != nil {

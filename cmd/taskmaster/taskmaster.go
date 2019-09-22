@@ -43,7 +43,8 @@ func main() {
 	err = runUI(confs, ctrl.chans)
 	if err != nil {
 		fmt.Println("Unable to run visualizer.  Exiting")
-		close(ctrl.chans.Killall)
 	}
+	close(ctrl.chans.Killall)
+	fmt.Println("Cleaning up processes")
 	<-waitchan
 }
