@@ -56,7 +56,7 @@ func ConfigToProcess(configs map[string]Config) ProcessMap {
 	for _, config := range configs {
 		procSlice := []*Process{}
 		for i := 0; i < config.NumProcs; i++ {
-			proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_Setup, 0, 0}
+			proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_Stop, 0, 0}
 			procSlice = append(procSlice, &proc)
 		}
 		tmp[config.Name] = procSlice
