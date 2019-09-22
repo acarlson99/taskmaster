@@ -11,12 +11,21 @@ func InSlice(num int, nums []int) bool {
 	return idx < len(nums) && nums[idx] == num
 }
 
-func CheckExit(err error, codes []int) (bool, error) {
+func GetExitCode(err error) (int, error) {
 	if err == nil {
-		return InSlice(0, codes), nil
+		return 0, nil
 	} else if exiterr, ok := err.(*exec.ExitError); ok {
-		code := exiterr.ExitCode()
+		return exiterr.ExitCode(), nil
+	} else {
+		return -1, err
+	}
+}
+
+func CheckExit(err error, codes []int) (bool, error) {
+	code, exErr := GetExitCode(err)
+	if exErr != nil {
+		return false, err
+	} else {
 		return InSlice(code, codes), nil
 	}
-	return false, err
 }

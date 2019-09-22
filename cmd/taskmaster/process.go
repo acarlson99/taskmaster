@@ -39,13 +39,14 @@ type Process struct {
 	Status   string
 	Crashes  int
 	Restarts int
+	Exit     int
 }
 
 type ProcessMap map[string][]*Process
 type doneSignal struct{}
 
 func (p Process) FullStatusString() string {
-	return fmt.Sprintln("*******STAUS*******\n", p.Conf, "\n Crashes:", p.Crashes, "\n Restarts:", p.Restarts)
+	return fmt.Sprintln("*******STAUS*******\n", p.Conf, "\n Crashes:", p.Crashes, "\n Restarts:", p.Restarts, "\n Exit:", p.Exit)
 }
 
 func (p Process) String() string {
@@ -57,7 +58,7 @@ func ConfigToProcess(configs map[string]Config) ProcessMap {
 	for _, config := range configs {
 		procSlice := []*Process{}
 		for i := 0; i < config.NumProcs; i++ {
-			proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_Stop, 0, 0}
+			proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_Stop, 0, 0, -1}
 			procSlice = append(procSlice, &proc)
 		}
 		tmp[config.Name] = procSlice
@@ -170,14 +171,14 @@ func RunProcess(ctx context.Context, process *Process,
 	defer func() {
 		process.Pid = 0
 	}()
-	cmdDone := make(chan bool)
+	cmdDone := make(chan int)
 	go func() {
 		err = cmd.Wait()
-		ok, err := CheckExit(err, process.Conf.ExitCodes)
+		code, err := GetExitCode(err)
 		if err != nil {
 			logger.Println("Unexpected error from proc", process.Name+":", err)
 		}
-		cmdDone <- ok
+		cmdDone <- code
 	}()
 	started := false
 	for {
@@ -204,8 +205,11 @@ func RunProcess(ctx context.Context, process *Process,
 				}
 			}
 			process.Status = C_Killed
+			process.Exit = -1
 			return P_Killed
-		case ok := <-cmdDone:
+		case code := <-cmdDone:
+			process.Exit = code
+			ok := InSlice(code, process.Conf.ExitCodes)
 			if ok {
 				process.Status = C_Done
 				return P_Ok
