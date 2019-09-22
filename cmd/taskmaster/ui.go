@@ -123,25 +123,32 @@ func updateStatusView(g *gocui.Gui, procs *ProcessMap) {
 }
 
 func handleCommand(args []string, procs *ProcessMap, p ProcChans, ov *gocui.View, f func(tmp []*Process, index int)) {
+
+	if len(args) < 2 {
+		fmt.Fprintf(ov, "Command %s needs args\n", args[0])
+		return
+	}
+	tmp, ok := (*procs)[args[1]]
+	if !ok {
+		fmt.Fprintf(ov, "Could not find process %s\n", args[1])
+		return
+	}
 	if len(args) > 2 {
-		if tmp, ok := (*procs)[args[1]]; ok {
-			for _, arg := range args[2:] {
-				index, err := strconv.Atoi(arg)
-				if err != nil {
-					logger.Println("atoi fialed", err)
-					return
-				}
-				f(tmp, index)
+		for _, arg := range args[2:] {
+			index, err := strconv.Atoi(arg)
+			if err != nil {
+				logger.Println("atoi fialed", err)
+				return
 			}
+			f(tmp, index)
 		}
-	} else if len(args) == 2 {
+
+	} else {
 		if tmp, ok := (*procs)[args[1]]; ok {
 			for idx := range tmp {
 				f(tmp, idx)
 			}
 		}
-	} else {
-		fmt.Fprintf(ov, "Command %s needs args\n", args[0])
 	}
 }
 
@@ -182,12 +189,12 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 			ov.Clear()
 			ov.SetOrigin(0, 0)
 			help := `Commands:
-			status
-				- Shows the status of a processes
-			start, run
-				- 'start name [index]'   start all processes called name or use index
-			stop, kill
-				- 'stop [process name] [index]'   stop process
+			status process [id]
+				- show the status of a processes
+			start process [id]
+				- start all processes called name or use index
+			stop process [id]
+				- stop process
 			reload
 				- reload config file
 			help
