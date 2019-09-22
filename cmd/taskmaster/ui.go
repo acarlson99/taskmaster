@@ -162,16 +162,25 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 				})
 		case "start", "run":
 			handleCommand(args, procs, p, ov, func(tmp []*Process, index int) {
-				p.newPros <- tmp[index]
+				if index >= 0 && index < len(tmp) {
+					p.newPros <- tmp[index]
+				} else {
+					fmt.Fprintf(ov, "Index %d out of range\n", index)
+				}
 			})
 		case "stop", "kill":
 			handleCommand(args, procs, p, ov, func(tmp []*Process, index int) {
-				p.oldPros <- tmp[index]
+				if index >= 0 && index < len(tmp) {
+					p.oldPros <- tmp[index]
+				} else {
+					fmt.Fprintf(ov, "Index %d out of range\n", index)
+				}
 			})
 		case "reload":
 			*procs = UpdateConfig(configFile, *procs, p)
 		case "help":
 			ov.Clear()
+			ov.SetOrigin(0, 0)
 			help := `Commands:
 			status
 				- Shows the status of a processes
