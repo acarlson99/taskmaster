@@ -16,14 +16,15 @@ import (
 type ProcExit int
 
 const (
-	C_Run     = "running"
-	C_Setup   = "setup"
-	C_Stop    = "stopped"
-	C_Crash   = "crashed"
-	C_Done    = "done"
-	C_NoStart = "unable to start"
-	C_Noconf  = "unable to configure"
-	C_Killed  = "killed"
+	C_Run      = "running"
+	C_Setup    = "setup"
+	C_Stop     = "stopped"
+	C_Crash    = "crashed"
+	C_Done     = "done"
+	C_NoStart  = "unable to start"
+	C_Noconf   = "unable to configure"
+	C_Killed   = "killed"
+	C_Stopping = "stopping"
 
 	P_Ok ProcExit = iota
 	P_Crash
@@ -188,6 +189,7 @@ func RunProcess(ctx context.Context, process *Process,
 			process.Status = C_Run
 			ticker.Stop()
 		case <-ctx.Done():
+			process.Status = C_Stopping
 			err := cmd.Process.Signal(process.Conf.Sig)
 			if err != nil {
 				logger.Println("Got error from signaling proc",
