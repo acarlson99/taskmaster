@@ -33,13 +33,13 @@ func (c *controller) run(waitchan chan interface{}) {
 	envlock := make(chan interface{}, 1)
 	envlock <- 1
 	ctx := context.Background()                  //Make args
-	cancleMap := map[string]context.CancelFunc{} //make args	//process && cancle()
+	cancelMap := map[string]context.CancelFunc{} //make args	//process && cancel()
 	go func() {
 		for {
 			done := <-c.chans.DoneChan
 			<-maplock
 
-			delete(cancleMap, done.Name)
+			delete(cancelMap, done.Name)
 
 			maplock <- 1
 		}
@@ -48,34 +48,34 @@ func (c *controller) run(waitchan chan interface{}) {
 		select {
 		case newPros := <-c.chans.newPros:
 			<-maplock
-			if _, ok := cancleMap[newPros.Name]; ok {
-				logger.Println("Unable to start process",
-					newPros.Name+": process already running")
+			if _, ok := cancelMap[newPros.Name]; ok {
+				logger.Println("Process already running.  Not restarting:",
+					newPros.Name)
 				continue
 			}
-			logger.Println("Starting a new process cycle", newPros.Name)
-			ctx, cancle := context.WithCancel(ctx)
-			cancleMap[newPros.Name] = cancle
+			logger.Println("Running process:", newPros.Name)
+			ctx, cancel := context.WithCancel(ctx)
+			cancelMap[newPros.Name] = cancel
 			maplock <- 1
 			wg.Add(1)
 			go ProcContainer(ctx, newPros, &wg, envlock, c.chans.DoneChan)
 		case oldPros := <-c.chans.oldPros:
-			logger.Println("Gonna cancle:", oldPros.Name)
+			logger.Println("Canceling process:", oldPros.Name)
 			<-maplock
-			cancle := cancleMap[oldPros.Name]
-			if cancle != nil {
-				cancle()
-				delete(cancleMap, oldPros.Name)
+			cancel := cancelMap[oldPros.Name]
+			if cancel != nil {
+				cancel()
+				delete(cancelMap, oldPros.Name)
 			} else {
-				logger.Println("Unable to cancle:", oldPros.Name)
+				logger.Println("Unable to cancel process:", oldPros.Name)
 			}
 			maplock <- 1
 		case <-c.chans.Killall:
-			logger.Println("Leaving application.  Killing child processes")
+			logger.Println("Killing all processes")
 			<-maplock
-			for name, f := range cancleMap {
+			for name, f := range cancelMap {
 				f()
-				delete(cancleMap, name)
+				delete(cancelMap, name)
 			}
 			maplock <- 1
 			wg.Wait()

@@ -170,8 +170,8 @@ func ParseConfig(filename string) (map[string]Config, error) {
 func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 	new, err := ParseConfig(file) //Make it return ProcessMap?
 	if err != nil {
-		logger.Println(err)
-		panic(err) //Panic? or print erro and keep running same? or catch panic outside
+		logger.Println("Error updating config:", err)
+		panic(err) // TODO: dont crash.  Panic? or print error and keep running same? or catch panic outside
 	}
 	tmp := ConfigToProcess(new)
 	for i, slices := range tmp {

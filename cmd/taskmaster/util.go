@@ -16,7 +16,6 @@ func CheckExit(err error, codes []int) (bool, error) {
 		return InSlice(0, codes), nil
 	} else if exiterr, ok := err.(*exec.ExitError); ok {
 		code := exiterr.ExitCode()
-		// fmt.Println(code)
 		return InSlice(code, codes), nil
 	}
 	return false, err

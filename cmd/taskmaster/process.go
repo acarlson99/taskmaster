@@ -15,12 +15,13 @@ import (
 type ProcExit int
 
 const (
-	C_RUN     = "running"
-	C_SETUP   = "setup"
-	C_STOP    = "stopped"
-	C_CRASH   = "crashed"
-	C_DONE    = "done"
-	C_NOSTART = "unable to start"
+	C_Run     = "running"
+	C_Setup   = "setup"
+	C_Stop    = "stopped"
+	C_Crash   = "crashed"
+	C_Done    = "done"
+	C_NoStart = "unable to start"
+	C_Noconf  = "unable to configure"
 
 	P_Ok ProcExit = iota
 	P_Crash
@@ -54,8 +55,8 @@ func ConfigToProcess(configs map[string]Config) ProcessMap {
 	for _, config := range configs {
 		procSlice := []*Process{}
 		for i := 0; i < config.NumProcs; i++ {
-			proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_SETUP, 0, 0}
-			// proc := Process{MakeName(i, config), config, 0, C_SETUP, 0, 0}
+			proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_Setup, 0, 0}
+			// proc := Process{MakeName(i, config), config, 0, C_Setup, 0, 0}
 			procSlice = append(procSlice, &proc)
 		}
 		tmp[config.Name] = procSlice
@@ -101,7 +102,6 @@ func ConfigureProcess(cmd *exec.Cmd, conf *Config) (func(), error) {
 		file, err := os.OpenFile(conf.Stdout,
 			os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
-			logger.Println(conf.Name+":", err)
 			return func() { filecleanup(openfiles) }, err
 		}
 		openfiles = append(openfiles, file)
@@ -113,7 +113,6 @@ func ConfigureProcess(cmd *exec.Cmd, conf *Config) (func(), error) {
 		file, err := os.OpenFile(conf.Stdout,
 			os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
-			logger.Println(conf.Name+":", err)
 			return func() { filecleanup(openfiles) }, err
 		}
 		openfiles = append(openfiles, file)
@@ -122,7 +121,6 @@ func ConfigureProcess(cmd *exec.Cmd, conf *Config) (func(), error) {
 	if conf.Stdin != "" {
 		file, err := os.Open(conf.Stdin)
 		if err != nil {
-			logger.Println(conf.Name+":", err)
 			return func() { filecleanup(openfiles) }, err
 		}
 		openfiles = append(openfiles, file)
@@ -137,8 +135,8 @@ func RunProcess(ctx context.Context, process *Process,
 	cleanup, err := ConfigureProcess(cmd, &process.Conf)
 	defer cleanup()
 	if err != nil {
-		logger.Println(err)
-		process.Status = C_NOSTART
+		logger.Println("Error configuring proc", process.Name+":", err)
+		process.Status = C_NoStart
 	}
 
 	<-envlock
@@ -150,21 +148,22 @@ func RunProcess(ctx context.Context, process *Process,
 	envlock <- 1
 
 	if err != nil {
-		logger.Println(err)
+		logger.Println("Error starting proc", process.Name+":", err)
 		return P_NoStart
 	}
+
 	process.Pid = cmd.Process.Pid
-	process.Status = C_SETUP
+	process.Status = C_Setup
 	defer func() {
 		process.Pid = 0
-		// process.Status = C_DONE // change to crash or w/e later
+		// process.Status = C_Done // change to crash or w/e later
 	}()
 	cmdDone := make(chan bool)
 	go func() {
 		err = cmd.Wait()
 		ok, err := CheckExit(err, process.Conf.ExitCodes)
 		if err != nil {
-			logger.Println(err)
+			logger.Println("Unexpected error from proc", process.Name+":", err)
 		}
 		cmdDone <- ok
 		// if err != nil {
@@ -177,12 +176,13 @@ func RunProcess(ctx context.Context, process *Process,
 		select {
 		case <-ticker.C:
 			started = true
-			process.Status = C_RUN
+			process.Status = C_Run
 			ticker.Stop()
 		case <-ctx.Done():
 			err := cmd.Process.Signal(process.Conf.Sig)
 			if err != nil {
-				logger.Println(err)
+				logger.Println("Got error from signaling proc",
+					process.Name+":", err)
 			}
 			// wait
 			time.Sleep(time.Duration(process.Conf.StopTime) * time.Second)
@@ -192,19 +192,19 @@ func RunProcess(ctx context.Context, process *Process,
 				logger.Println("Unable to exit proc", process.Name+". Killing")
 				err := cmd.Process.Kill()
 				if err != nil {
-					logger.Println(process.Name, err)
+					logger.Println("Got error from killing proc", process.Name+":", err)
 				}
 			}
 			return P_Killed
 		case ok := <-cmdDone:
 			if ok {
-				process.Status = C_DONE
+				process.Status = C_Done
 				return P_Ok
 			} else if process.Conf.StartTime == 0 || started {
-				process.Status = C_CRASH
+				process.Status = C_Crash
 				return P_Crash
 			} else {
-				process.Status = C_NOSTART
+				process.Status = C_NoStart
 				return P_NoStart
 			}
 		}
@@ -230,7 +230,7 @@ func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
 			logger.Println(process.Name, "Killed by user")
 			return
 		case P_ConfErr:
-			logger.Println(process.Name, "Error configuring process")
+			logger.Println(process.Name, "Error configuring proc")
 		}
 		if numRestarts != 0 && (process.Conf.AutoRestart == "always" ||
 			(process.Conf.AutoRestart == "sometimes" && r == P_NoStart)) {
@@ -243,67 +243,3 @@ func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
 		}
 	}
 }
-
-// func Run(proc *Process, logger *logger.Logger, wg *sync.WaitGroup) {
-// 	defer wg.Done()
-// 	proc.Status = C_SETUP
-// 	// setenv
-// 	for key, val := range proc.Conf.Env {
-// 		os.Setenv(key, val)
-// 	}
-// 	fmt.Println()
-// 	cmd := exec.Command(proc.Conf.Cmd, proc.Conf.Args...)
-
-// 	if proc.Conf.WorkingDir != "" {
-// 		cmd.Dir = proc.Conf.WorkingDir
-// 	}
-
-// 	syscall.Umask(proc.Conf.Umask)
-
-// 	// set stream redirection
-// 	if proc.Conf.Stdout != "" {
-// 		file, err := os.Create(proc.Conf.Stdout)
-// 		if err != nil {
-// 			logger.Println(proc.Conf.Name+":", err)
-// 			proc.Status = C_NOSTART
-// 			return
-// 		}
-// 		defer file.Close()
-// 		cmd.Stdout = file
-// 	}
-// 	if proc.Conf.Stderr == proc.Conf.Stdout {
-// 		cmd.Stderr = cmd.Stdout
-// 	} else if proc.Conf.Stderr != "" {
-// 		file, err := os.Create(proc.Conf.Stderr)
-// 		if err != nil {
-// 			logger.Println(proc.Conf.Name+":", err)
-// 			proc.Status = C_NOSTART
-// 			return
-// 		}
-// 		defer file.Close()
-// 		cmd.Stderr = file
-// 	}
-// 	// NOTE: setting stdin and stdout to the same file
-// 	// truncates the file before it can be read
-// 	if proc.Conf.Stdin != "" {
-// 		file, err := os.Open(proc.Conf.Stdin)
-// 		if err != nil {
-// 			logger.Println(proc.Conf.Name+":", err)
-// 			proc.Status = C_NOSTART
-// 			return
-// 		}
-// 		defer file.Close()
-// 		cmd.Stdin = file
-// 	}
-
-// 	proc.Status = C_RUN
-// 	err := cmd.Run()
-// 	if err != nil {
-// 		goodexit, err := CheckExit(err, proc.Conf.ExitCodes)
-// 		fmt.Println(goodexit, err)
-// 		logger.Println(proc.Conf.Name+":", err)
-// 		proc.Status = C_CRASH
-// 		return
-// 	}
-// 	proc.Status = C_DONE
-// }
