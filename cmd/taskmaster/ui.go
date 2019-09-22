@@ -16,7 +16,7 @@ const (
 	ih = 3
 )
 
-func setKeyBindings(procs ProcessMap, p ProcChans, g *gocui.Gui) {
+func setKeyBindings(procs *jProcessMap, p ProcChans, g *gocui.Gui) {
 	//keybind
 	err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
@@ -27,7 +27,7 @@ func setKeyBindings(procs ProcessMap, p ProcChans, g *gocui.Gui) {
 		logger.Println("Could not set key binding:", err)
 		return
 	}
-	fnk := wrap(&procs, p)
+	fnk := wrap(procs, p)
 	err = g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, fnk)
 	if err != nil {
 		logger.Println("Cannot bind the enter key:", err)
@@ -45,7 +45,7 @@ func runUI(procs ProcessMap, p ProcChans) error {
 	g.Cursor = true
 
 	g.SetManagerFunc(layout)
-	setKeyBindings(procs, p, g)
+	setKeyBindings(&procs, p, g)
 
 	tw, th := g.Size()
 	//list of process view
