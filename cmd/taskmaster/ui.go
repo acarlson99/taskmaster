@@ -16,7 +16,7 @@ const (
 	ih = 3
 )
 
-func setKeyBindings(procs *jProcessMap, p ProcChans, g *gocui.Gui) {
+func setKeyBindings(procs *ProcessMap, p ProcChans, g *gocui.Gui) {
 	//keybind
 	err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
