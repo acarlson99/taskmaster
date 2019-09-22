@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"sync"
-	// "fmt"
 )
 
 //Controller is used to stop / start process

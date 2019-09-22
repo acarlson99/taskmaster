@@ -56,7 +56,6 @@ func ConfigToProcess(configs map[string]Config) ProcessMap {
 		procSlice := []*Process{}
 		for i := 0; i < config.NumProcs; i++ {
 			proc := Process{config.Name + " - " + strconv.Itoa(i), config, 0, C_Setup, 0, 0}
-			// proc := Process{MakeName(i, config), config, 0, C_Setup, 0, 0}
 			procSlice = append(procSlice, &proc)
 		}
 		tmp[config.Name] = procSlice
@@ -86,7 +85,6 @@ func filecleanup(openfiles []*os.File) {
 }
 
 func ConfigureProcess(cmd *exec.Cmd, conf *Config) (func(), error) {
-	// TODO: fix.  Env not set properly
 	env := os.Environ()
 	for name, val := range conf.Env {
 		env = append(env, fmt.Sprintf("%s=%s", name, val))
@@ -141,7 +139,6 @@ func RunProcess(ctx context.Context, process *Process,
 
 	<-envlock
 	oldUmask := syscall.Umask(process.Conf.Umask)
-	// starttime := time.Now()
 	ticker := time.NewTicker(time.Duration(process.Conf.StartTime) * time.Second)
 	err = cmd.Start()
 	syscall.Umask(oldUmask)
@@ -156,7 +153,6 @@ func RunProcess(ctx context.Context, process *Process,
 	process.Status = C_Setup
 	defer func() {
 		process.Pid = 0
-		// process.Status = C_Done // change to crash or w/e later
 	}()
 	cmdDone := make(chan bool)
 	go func() {
@@ -166,10 +162,6 @@ func RunProcess(ctx context.Context, process *Process,
 			logger.Println("Unexpected error from proc", process.Name+":", err)
 		}
 		cmdDone <- ok
-		// if err != nil {
-		// 	logger.Println(err)
-		// }
-		// cmdDone <- doneSignal{}
 	}()
 	started := false
 	for {
@@ -217,7 +209,7 @@ func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
 	defer func() { donechan <- process }()
 	numRestarts := process.Conf.StartRetries
 	for {
-		r := RunProcess(ctx, process, envlock) //Pass Context to here too? to terminate process?
+		r := RunProcess(ctx, process, envlock)
 		switch r {
 		case P_Ok:
 			logger.Println(process.Name, "Ok")
@@ -234,7 +226,7 @@ func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
 		}
 		if numRestarts != 0 && (process.Conf.AutoRestart == "always" ||
 			(process.Conf.AutoRestart == "sometimes" && r == P_NoStart)) {
-			logger.Println(process.Name, "Retrying")
+			logger.Println("Retrying process:", process.Name)
 			if numRestarts > 0 {
 				numRestarts--
 			}
