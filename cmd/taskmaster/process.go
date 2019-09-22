@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"sync"
 	"syscall"
@@ -65,10 +66,17 @@ func ConfigToProcess(configs map[string]Config) ProcessMap {
 
 func (p ProcessMap) String() string {
 	var b bytes.Buffer
-	for i, v := range p {
-		b.WriteString(i)
+	var keys []string
+	for ii := range p {
+		keys = append(keys, ii)
+	}
+	sort.Slice(keys, func(ii, jj int) bool {
+		return keys[ii] < keys[jj]
+	})
+	for _, v := range keys {
+		b.WriteString(v)
 		b.WriteString(":\n")
-		for _, proc := range v {
+		for _, proc := range p[v] {
 			b.WriteString(proc.String())
 			b.WriteString("\n")
 		}
@@ -139,7 +147,12 @@ func RunProcess(ctx context.Context, process *Process,
 
 	<-envlock
 	oldUmask := syscall.Umask(process.Conf.Umask)
-	ticker := time.NewTicker(time.Duration(process.Conf.StartTime) * time.Second)
+	var ticker *time.Ticker
+	if process.Conf.StartTime > 0 {
+		ticker = time.NewTicker(time.Duration(process.Conf.StartTime) * time.Second)
+	} else {
+		ticker = time.NewTicker(1)
+	}
 	err = cmd.Start()
 	syscall.Umask(oldUmask)
 	envlock <- 1

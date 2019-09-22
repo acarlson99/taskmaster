@@ -1,7 +1,9 @@
 TODO:
   - fix status updates/info
   - check to add locks to avoid race conditions
-  - improve UI
+  - ui:
+    - fix clear error when screen filled
+    - fix reload
   - check if config has been changed
   - fix reload
   - standardize log messages
