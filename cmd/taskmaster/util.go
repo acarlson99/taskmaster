@@ -7,7 +7,7 @@ import (
 
 func InSlice(num int, nums []int) bool {
 	idx := sort.Search(len(nums),
-		func(ii int) bool { return nums[ii] >= 0 })
+		func(ii int) bool { return nums[ii] >= num })
 	return idx < len(nums) && nums[idx] == num
 }
 

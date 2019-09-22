@@ -22,9 +22,9 @@ type Config struct {
 	AutoRestart  string            `yaml:"autorestart"`  // always/never/unexpected (defult: never)
 	ExitCodes    []int             `yaml:"exitcodes"`    // expected exit codes (default: 0)
 	StartRetries int               `yaml:"startretries"` // times to retry if unexpected exit (default: 0) (-1 for infinite)
-	StartTime    int               `yaml:"starttime"`    // delay before start
-	StopSignal   string            `yaml:"stopsignal"`   // if time up what signal to send
-	StopTime     int               `yaml:"stoptime"`     // time until signal sent (default: 2)
+	StartTime    int               `yaml:"starttime"`    // time to start app
+	StopSignal   string            `yaml:"stopsignal"`   // signal to kill
+	StopTime     int               `yaml:"stoptime"`     // time until mean kill
 	Stdin        string            `yaml:"stdin"`        // file read as stdin
 	Stdout       string            `yaml:"stdout"`       // stdout redirect file
 	Stderr       string            `yaml:"stderr"`       // stderr redirect file
@@ -151,6 +151,9 @@ func ParseConfig(filename string) (map[string]Config, error) {
 			conf.StopSignal = "ABRT"
 		}
 		conf.Sig, err = GetSignal(conf.StopSignal)
+		if err != nil {
+			return confs, err
+		}
 		if len(conf.ExitCodes) == 0 {
 			conf.ExitCodes = []int{0}
 		}
