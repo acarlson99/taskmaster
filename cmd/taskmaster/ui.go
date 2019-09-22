@@ -151,6 +151,7 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 		switch args[0] {
 		case "clear":
 			ov.Clear()
+			ov.SetOrigin(0, 0)
 		case "status":
 			handleCommand(args, procs, p, ov,
 				func(tmp []*Process, index int) {
@@ -188,7 +189,14 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 			if e != nil {
 				logger.Println("Cannot print to output view:", e)
 			}
+		default:
+			fmt.Fprintf(ov, "Invalid command: ")
 		}
+		_, e := fmt.Fprint(ov, line)
+		if e != nil {
+			logger.Println("Cannot print to output view:", e)
+		}
+
 	}
 }
 
@@ -209,11 +217,6 @@ func wrap(procs *ProcessMap, p ProcChans) func(g *gocui.Gui, v *gocui.View) erro
 		}
 		line := iv.Buffer()
 		getCommand(line, procs, p, ov)
-
-		_, e = fmt.Fprint(ov, iv.Buffer())
-		if e != nil {
-			logger.Println("Cannot print to output view:", e)
-		}
 
 		iv.Clear()
 

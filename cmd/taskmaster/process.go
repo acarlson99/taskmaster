@@ -23,6 +23,7 @@ const (
 	C_Done    = "done"
 	C_NoStart = "unable to start"
 	C_Noconf  = "unable to configure"
+	C_Killed  = "killed"
 
 	P_Ok ProcExit = iota
 	P_Crash
@@ -145,20 +146,22 @@ func RunProcess(ctx context.Context, process *Process,
 		process.Status = C_NoStart
 	}
 
-	<-envlock
-	oldUmask := syscall.Umask(process.Conf.Umask)
 	var ticker *time.Ticker
 	if process.Conf.StartTime > 0 {
 		ticker = time.NewTicker(time.Duration(process.Conf.StartTime) * time.Second)
 	} else {
 		ticker = time.NewTicker(1)
 	}
+
+	<-envlock
+	oldUmask := syscall.Umask(process.Conf.Umask)
 	err = cmd.Start()
 	syscall.Umask(oldUmask)
 	envlock <- 1
 
 	if err != nil {
 		logger.Println("Error starting proc", process.Name+":", err)
+		process.Status = C_NoStart
 		return P_NoStart
 	}
 
@@ -193,13 +196,14 @@ func RunProcess(ctx context.Context, process *Process,
 			time.Sleep(time.Duration(process.Conf.StopTime) * time.Second)
 			// hard kill
 			err = cmd.Process.Signal(process.Conf.Sig)
-			if err != nil {
+			if err == nil {
 				logger.Println("Unable to exit proc", process.Name+". Killing")
 				err := cmd.Process.Kill()
 				if err != nil {
 					logger.Println("Got error from killing proc", process.Name+":", err)
 				}
 			}
+			process.Status = C_Killed
 			return P_Killed
 		case ok := <-cmdDone:
 			if ok {
@@ -231,6 +235,7 @@ func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
 			process.Crashes++
 		case P_NoStart:
 			logger.Println(process.Name, "Unable to start")
+			process.Crashes++
 		case P_Killed:
 			logger.Println(process.Name, "Killed by user")
 			return
@@ -243,6 +248,7 @@ func ProcContainer(ctx context.Context, process *Process, wg *sync.WaitGroup,
 			if numRestarts > 0 {
 				numRestarts--
 			}
+			process.Restarts++
 		} else {
 			return
 		}
