@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"sort"
 	"syscall"
 
@@ -170,6 +171,10 @@ func ParseConfig(filename string) (map[string]Config, error) {
 	return confs, nil
 }
 
+func compareConfig(new, old Config) bool {
+	return reflect.DeepEqual(new, old)
+}
+
 func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 	new, err := ParseConfig(file)
 	if err != nil {
@@ -186,9 +191,10 @@ func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 					p.newPros <- v //Addeding
 				}
 			}
-		} else { //already running -- if nothing changed, move process from old to tmp
-			tmp[key] = old[key]
-			// fmt.Println(tmp[key])
+		} else {
+			if compareConfig(tmp[key][0].Conf, old[key][0].Conf) {
+				tmp[key] = old[key]
+			}
 			// TODO: need to check if it's been changed or not and restarted?
 			delete(old, key)
 		}
