@@ -50,14 +50,14 @@ func (c *controller) run(waitchan chan interface{}) {
 			if _, ok := cancelMap[newPros.Name]; ok {
 				logger.Println("Process already running.  Not restarting:",
 					newPros.Name)
-				continue
+			} else {
+				logger.Println("Running process:", newPros.Name)
+				ctx, cancel := context.WithCancel(ctx)
+				cancelMap[newPros.Name] = cancel
+				wg.Add(1)
+				go ProcContainer(ctx, newPros, &wg, envlock, c.chans.DoneChan)
 			}
-			logger.Println("Running process:", newPros.Name)
-			ctx, cancel := context.WithCancel(ctx)
-			cancelMap[newPros.Name] = cancel
 			maplock <- 1
-			wg.Add(1)
-			go ProcContainer(ctx, newPros, &wg, envlock, c.chans.DoneChan)
 		case oldPros := <-c.chans.oldPros:
 			logger.Println("Canceling process:", oldPros.Name)
 			<-maplock
