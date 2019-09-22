@@ -145,9 +145,12 @@ func ParseConfig(filename string) (map[string]Config, error) {
 			conf.Umask = 022
 		}
 		if ok := confmap["stoptime"]; ok == nil || conf.StopTime < 0 {
-			conf.StopTime = 0
+			conf.StopTime = 1
 		}
-		if len(conf.StopSignal) == 0 {
+		if ok := confmap["workingdir"]; ok == nil {
+			conf.WorkingDir = "./"
+		}
+		if ok := confmap["stopsignal"]; ok == nil {
 			conf.StopSignal = "ABRT"
 		}
 		conf.Sig, err = GetSignal(conf.StopSignal)
