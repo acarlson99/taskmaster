@@ -198,7 +198,7 @@ func RunProcess(ctx context.Context, process *Process,
 			// wait
 			time.Sleep(time.Duration(process.Conf.StopTime) * time.Second)
 			// hard kill
-			err = cmd.Process.Signal(process.Conf.Sig)
+			err = cmd.Process.Signal(syscall.Signal(0))
 			if err == nil {
 				logger.Println("Unable to exit proc", process.Name+". Killing")
 				err := cmd.Process.Kill()

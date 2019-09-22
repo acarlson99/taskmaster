@@ -152,7 +152,7 @@ func ParseConfig(filename string) (map[string]Config, error) {
 			conf.WorkingDir = "./"
 		}
 		if ok := confmap["stopsignal"]; ok == nil {
-			conf.StopSignal = "ABRT"
+			conf.StopSignal = "INT"
 		}
 		conf.Sig, err = GetSignal(conf.StopSignal)
 		if err != nil {
@@ -197,6 +197,11 @@ func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 		} else {
 			if compareConfig(tmp[key][0].Conf, old[key][0].Conf) {
 				tmp[key] = old[key]
+			} else {
+				for _, v := range old[key] {
+					// TODO: fix autostart when updated
+					p.oldPros <- v
+				}
 			}
 			// TODO: need to check if it's been changed or not and restarted?
 			delete(old, key)

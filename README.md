@@ -21,7 +21,7 @@ go build ./cmd/taskmaster
 | `exitcodes`    | `[]int`                  | expected exit codes                                   | `[0]`   |
 | `startretries` | `int`                    | num of times to restart. <0 to always restart         | `0`     |
 | `starttime`    | `int`                    | seconds until proc is considered successfully started | `0`     |
-| `stopsignal`   | `ABRT/TERM/SEGV...`      | signal to send to kill process                        | `ABRT`  |
+| `stopsignal`   | `ABRT/TERM/SEGV...`      | signal to send to kill process                        | `INT`   |
 | `stoptime`     | `int`                    | time between stopsignal sent and hard kill            | `1`     |
 | `stdin`        | `string`                 | file to be read as stdin                              | empty   |
 | `stdout`       | `string`                 | file to which to redirect stdout                      | empty   |
