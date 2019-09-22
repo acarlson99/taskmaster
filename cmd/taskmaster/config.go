@@ -171,24 +171,26 @@ func ParseConfig(filename string) (map[string]Config, error) {
 }
 
 func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
-	new, err := ParseConfig(file) //Make it return ProcessMap?
+	new, err := ParseConfig(file)
 	if err != nil {
 		logger.Println("Error updating config:", err)
 		panic(err) // TODO: dont crash.  Panic? or print error and keep running same? or catch panic outside
 	}
 	tmp := ConfigToProcess(new)
-	for i, slices := range tmp {
-		_, ok := old[i]
+	logger.Println("loading config...")
+	for key, slices := range tmp {
+		_, ok := old[key]
 		if !ok {
 			for _, v := range slices {
 				if v.Conf.AutoStart {
 					p.newPros <- v //Addeding
 				}
 			}
-		} else { //already running
-			tmp[i] = old[i]
+		} else { //already running -- if nothing changed, move process from old to tmp
+			tmp[key] = old[key]
+			// fmt.Println(tmp[key])
 			// TODO: need to check if it's been changed or not and restarted?
-			delete(old, i)
+			delete(old, key)
 		}
 	}
 	for _, slices := range old {
