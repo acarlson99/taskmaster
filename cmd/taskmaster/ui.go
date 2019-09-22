@@ -16,25 +16,37 @@ const (
 	ih = 3
 )
 
-func setKeyBindings(procs *ProcessMap, p ProcChans, g *gocui.Gui) {
+func checkErr(e error, str string) {
+	if e != nil {
+		logger.Println(str, e)
+		return
+	}
+}
+
+func Exiting(g *gocui.Gui) {
+	ov, e := g.View("output")
+	checkErr(e, "Could not get view output")
+	ov.Clear()
+	_, e := fmt.Fprint(ov, "Waiting for all process to end, Please wait...")
+	checkErr(e, "Could not print to OV")
+
+}
+func setKeyBindings(procs *ProcessMap, p ProcChans, g *gocui.Gui, waitchan) {
 	//keybind
 	err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
 			close(p.Killall)
+			Exiting(g)
+			<- waitchan
 			return quit(g, v)
 		})
-	if err != nil {
-		logger.Println("Could not set key binding:", err)
-		return
-	}
+	checkErr(err, "Could not set key binding:")
 	fnk := wrap(procs, p)
 	err = g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, fnk)
-	if err != nil {
-		logger.Println("Cannot bind the enter key:", err)
-	}
+	checkErr(err, "Could not set key binding:")
 }
 
-func runUI(procs ProcessMap, p ProcChans) error {
+func runUI(procs ProcessMap, p ProcChans, waitchan chan interface{}) error {
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
 		logger.Println("Failed to create a GUI:", err)
@@ -45,7 +57,7 @@ func runUI(procs ProcessMap, p ProcChans) error {
 	g.Cursor = true
 
 	g.SetManagerFunc(layout)
-	setKeyBindings(&procs, p, g)
+	setKeyBindings(&procs, p, g, waitchan)
 
 	tw, th := g.Size()
 	//list of process view
