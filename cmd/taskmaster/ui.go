@@ -187,7 +187,7 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 			var err error
 			*procs, err = UpdateConfig(configFile, *procs, p)
 			if err != nil {
-				fmt.Fprintf(ov, "%v\n", err)
+				fmt.Fprintf(ov, "Unable to update config: %v\n", err)
 			}
 		case "help":
 			ov.Clear()

@@ -40,7 +40,8 @@ func main() {
 	configFile = args[0]
 	confs, err := UpdateConfig(configFile, map[string][]*Process{}, ctrl.chans)
 	if err != nil {
-		panic(err) // TODO: address error
+		fmt.Println("Unable to load config:", err)
+		return
 	}
 
 	err = runUI(confs, ctrl.chans)
