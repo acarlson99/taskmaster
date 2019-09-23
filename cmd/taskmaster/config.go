@@ -201,6 +201,9 @@ func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 				for _, v := range old[key] {
 					// TODO: fix autostart when updated
 					p.oldPros <- v
+					// if v.Conf.AutoStart {
+					// 	p.newPros <- v
+					// }
 				}
 			}
 			// TODO: need to check if it's been changed or not and restarted?

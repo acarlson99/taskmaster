@@ -64,7 +64,7 @@ func (c *controller) run(waitchan chan interface{}) {
 			cancel := cancelMap[oldPros.Name]
 			if cancel != nil {
 				cancel()
-				delete(cancelMap, oldPros.Name)
+				// delete(cancelMap, oldPros.Name)
 			} else {
 				logger.Println("Unable to cancel process:", oldPros.Name)
 			}
