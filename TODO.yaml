@@ -1,9 +1,6 @@
 TODO:
   - check to add locks to avoid race conditions
-  - ui:
-    - fix reload
-  - check if config has been changed
-  - fix reload
+  - fix errors with bad config
 
 DONE:
   - fix status updates/info
@@ -11,8 +8,12 @@ DONE:
   - make sure we handle duplicate process names
   - restart only when necessary
   - handle stdin/stdout for multiple instances of process
+  - check if config has been changed
+  - fix reload
+  - standardize log messages
   - ui:
     - fix clear error when screen filled
+    - fix reload
   - args:
     - umask
     - workingdir
@@ -25,4 +26,3 @@ DONE:
     - starttime
     - env
     - autostart
-  - standardize log messages
