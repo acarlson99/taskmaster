@@ -145,7 +145,8 @@ func RunProcess(ctx context.Context, process *Process,
 	defer cleanup()
 	if err != nil {
 		logger.Println("Error configuring proc", process.Name+":", err)
-		process.Status = C_NoStart
+		process.Status = C_Noconf
+		return P_ConfErr
 	}
 
 	var ticker *time.Ticker

@@ -118,6 +118,9 @@ func ParseConfig(filename string) (map[string]Config, error) {
 	}
 
 	confs := make(map[string]Config)
+	if _, ok := ymap["programs"]; !ok {
+		return nil, fmt.Errorf("No field \"programs\" in config")
+	}
 	for k, v := range ymap["programs"].(map[interface{}]interface{}) {
 		conf := Config{}
 		data, err := yaml.Marshal(v)
