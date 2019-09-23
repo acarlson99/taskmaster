@@ -174,46 +174,41 @@ func ParseConfig(filename string) (map[string]Config, error) {
 	return confs, nil
 }
 
-func compareConfig(new, old Config) bool {
-	return reflect.DeepEqual(new, old)
-}
-
 func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 	new, err := ParseConfig(file)
 	if err != nil {
 		logger.Println("Error updating config:", err)
 		panic(err) // TODO: dont crash.  Panic? or print error and keep running same? or catch panic outside
 	}
-	tmp := ConfigToProcess(new)
+	newProcs := ConfigToProcess(new)
 	logger.Println("loading config...")
-	for key, slices := range tmp {
+	for key, slices := range newProcs {
 		_, ok := old[key]
 		if !ok {
 			for _, v := range slices {
 				if v.Conf.AutoStart {
-					p.newPros <- v //Addeding
+					p.newPros <- v // Addding
 				}
 			}
 		} else {
-			if compareConfig(tmp[key][0].Conf, old[key][0].Conf) {
-				tmp[key] = old[key]
+			if reflect.DeepEqual(newProcs[key][0].Conf, old[key][0].Conf) {
+				newProcs[key] = old[key]
 			} else {
-				for _, v := range old[key] {
-					// TODO: fix autostart when updated
+				for _, v := range newProcs[key] {
 					p.oldPros <- v
-					// if v.Conf.AutoStart {
-					// 	p.newPros <- v
-					// }
+					if v.Conf.AutoStart {
+						logger.Println("Relaunching process:", v.Name)
+						p.newPros <- v
+					}
 				}
 			}
-			// TODO: need to check if it's been changed or not and restarted?
 			delete(old, key)
 		}
 	}
 	for _, slices := range old {
 		for _, v := range slices {
-			p.oldPros <- v //removing
+			p.oldPros <- v // removing
 		}
 	}
-	return tmp
+	return newProcs
 }
