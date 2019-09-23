@@ -38,7 +38,10 @@ func main() {
 	waitchan := make(chan interface{})
 	go ctrl.run(waitchan)
 	configFile = args[0]
-	confs := UpdateConfig(configFile, map[string][]*Process{}, ctrl.chans)
+	confs, err := UpdateConfig(configFile, map[string][]*Process{}, ctrl.chans)
+	if err != nil {
+		panic(err) // TODO: address error
+	}
 
 	err = runUI(confs, ctrl.chans)
 	if err != nil {

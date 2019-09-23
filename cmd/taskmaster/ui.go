@@ -184,7 +184,11 @@ func getCommand(line string, procs *ProcessMap, p ProcChans, ov *gocui.View) {
 				}
 			})
 		case "reload":
-			*procs = UpdateConfig(configFile, *procs, p)
+			var err error
+			*procs, err = UpdateConfig(configFile, *procs, p)
+			if err != nil {
+				fmt.Fprintf(ov, "%v\n", err)
+			}
 		case "help":
 			ov.Clear()
 			ov.SetOrigin(0, 0)

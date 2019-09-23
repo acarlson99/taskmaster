@@ -121,7 +121,11 @@ func ParseConfig(filename string) (map[string]Config, error) {
 	if _, ok := ymap["programs"]; !ok {
 		return nil, fmt.Errorf("No field \"programs\" in config")
 	}
-	for k, v := range ymap["programs"].(map[interface{}]interface{}) {
+	confMap, ok := ymap["programs"].(map[interface{}]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Unable to convert field \"programs\" to map")
+	}
+	for k, v := range confMap {
 		conf := Config{}
 		data, err := yaml.Marshal(v)
 		if err != nil {
@@ -161,7 +165,7 @@ func ParseConfig(filename string) (map[string]Config, error) {
 		if err != nil {
 			return confs, err
 		}
-		if len(conf.ExitCodes) == 0 {
+		if ok := confmap["exitcodes"]; ok == nil {
 			conf.ExitCodes = []int{0}
 		}
 		sort.Ints(conf.ExitCodes)
@@ -171,17 +175,21 @@ func ParseConfig(filename string) (map[string]Config, error) {
 		if conf.NumProcs <= 0 {
 			conf.NumProcs = 1
 		}
-		conf.Name = k.(string)
+		name, ok := k.(string)
+		if !ok {
+			return confs, fmt.Errorf("Name not string: %v", k)
+		}
+		conf.Name = name
 		confs[conf.Name] = conf
 	}
 	return confs, nil
 }
 
-func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
+func UpdateConfig(file string, old ProcessMap, p ProcChans) (ProcessMap, error) {
 	new, err := ParseConfig(file)
 	if err != nil {
 		logger.Println("Error updating config:", err)
-		panic(err) // TODO: dont crash.  Panic? or print error and keep running same? or catch panic outside
+		return old, err
 	}
 	newProcs := ConfigToProcess(new)
 	logger.Println("loading config...")
@@ -213,5 +221,5 @@ func UpdateConfig(file string, old ProcessMap, p ProcChans) ProcessMap {
 			p.oldPros <- v // removing
 		}
 	}
-	return newProcs
+	return newProcs, nil
 }
