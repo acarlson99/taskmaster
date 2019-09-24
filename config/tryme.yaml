@@ -1,0 +1,9 @@
+programs:
+  ls:
+    cmd: ls
+    numprocs: 2
+    args:
+      - -l
+      - /tmp/
+    stdout: /tmp/ls.stdout
+    stderr: /tmp/ls.stderr

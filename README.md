@@ -1,13 +1,33 @@
 # Taskmaster
 
-## Run
+Process control program
+
+## Dependencies
+
+* go 1.13
+
+## Build
 
 ```
 go build ./cmd/taskmaster
 ./taskmaster config/conf.yaml
 ```
 
-## Config
+## Usage
+
+### Config
+
+```yaml
+programs:
+  ls:
+    cmd: ls
+    numprocs: 2
+    args:
+      - -l
+      - /tmp/
+    stdout: /tmp/ls.stdout
+    stderr: /tmp/ls.stderr
+```
 
 | option         | type                     | description                                           | default |
 | ------         | ----                     | -----------                                           | ------- |
@@ -28,7 +48,7 @@ go build ./cmd/taskmaster
 | `stderr`       | `string`                 | file to which to redirect stderr                      | empty   |
 | `env`          | `map[string]string`      | environment variables to be set                       | empty   |
 
-## Commands
+### Commands
 
 | cmd                    | description                                                                     |
 | ---                    | -----------                                                                     |
@@ -40,3 +60,5 @@ go build ./cmd/taskmaster
 | `kill`                 | alias for stop                                                                  |
 | `reload`               | reload config, restarting any changed processes                                 |
 | `help`                 | display help                                                                    |
+
+![taskmaster_screenshot](./assets/taskmaster_screenshot.png)

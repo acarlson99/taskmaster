@@ -1,8 +1,0 @@
-programs:
-  sleep:
-    cmd: sleep
-    args:
-      - 5
-    starttime: 3
-    numprocs: 1
-    stopsignal: TERM

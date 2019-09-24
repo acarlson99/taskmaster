@@ -1,8 +1,8 @@
 TODO:
-  - check to add locks to avoid race conditions
-  - fix errors with bad config
+  - maybe fix reloading with active processes
 
 DONE:
+  - check to add locks to avoid race conditions
   - fix status updates/info
   - set signal properly
   - make sure we handle duplicate process names
@@ -11,6 +11,7 @@ DONE:
   - check if config has been changed
   - fix reload
   - standardize log messages
+  - fix errors with bad config
   - ui:
     - fix clear error when screen filled
     - fix reload

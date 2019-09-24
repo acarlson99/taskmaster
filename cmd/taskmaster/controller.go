@@ -31,8 +31,8 @@ func (c *controller) run(waitchan chan interface{}) {
 	maplock <- 1
 	envlock := make(chan interface{}, 1)
 	envlock <- 1
-	ctx := context.Background()                  //Make args
-	cancelMap := map[string]context.CancelFunc{} //make args	//process && cancel()
+	ctx := context.Background()                  // Make args
+	cancelMap := map[string]context.CancelFunc{} // process && cancel()
 	go func() {
 		for {
 			done := <-c.chans.DoneChan
@@ -64,7 +64,6 @@ func (c *controller) run(waitchan chan interface{}) {
 			cancel := cancelMap[oldPros.Name]
 			if cancel != nil {
 				cancel()
-				// delete(cancelMap, oldPros.Name)
 			} else {
 				logger.Println("Unable to cancel process:", oldPros.Name)
 			}

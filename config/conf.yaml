@@ -1,6 +1,10 @@
 programs:
-  nginx:
-    cmd: "/usr/local/bin/nginx -c /etc/nginx/test.conf"
+  ls1:
+    cmd: ls
+    args:
+      - -l
+      - -R
+      - /
     numprocs: 1
     umask: 022
     workingdir: /tmp
@@ -13,14 +17,14 @@ programs:
     starttime: 5
     stopsignal: TERM
     stoptime: 10
-    stdout: /tmp/nginx.stdout
-    stderr: /tmp/nginx.stderr
+    stdout: /tmp/ls1.stdout
+    stderr: /tmp/ls1.stderr
     env:
       STARTED_BY: taskmaster
       ANSWER: 42
 
-  vogsphere:
-    cmd: "/usr/local/bin/vogsphere-worker --no-prefork"
+  ls2:
+    cmd: ls
     numprocs: 8
     umask: 077
     workingdir: /tmp
@@ -32,7 +36,5 @@ programs:
     starttime: 5
     stopsignal: USR1
     stoptime: 10
-    stdout: /tmp/vgsworker.stdout
-    stderr: /tmp/vgsworker.stderr
-
-  # other:
+    stdout: /tmp/ls2.stdout
+    stderr: /tmp/ls2.stderr
