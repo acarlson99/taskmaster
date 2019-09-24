@@ -1,4 +1,4 @@
-module taskmaster
+module github.com/acarlson99/taskmaster
 
 go 1.13
 
