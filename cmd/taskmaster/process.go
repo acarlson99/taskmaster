@@ -138,6 +138,28 @@ func ConfigureProcess(cmd *exec.Cmd, conf *Config) (func(), error) {
 	return func() { filecleanup(openfiles) }, nil
 }
 
+func KillProcess(process *Process, cmd *exec.Cmd) {
+	process.Status = C_Stopping
+	err := cmd.Process.Signal(process.Conf.Sig)
+	if err != nil {
+		logger.Println("Got error from signaling proc",
+			process.Name+":", err)
+	}
+	// wait
+	time.Sleep(time.Duration(process.Conf.StopTime) * time.Second)
+	// hard kill
+	err = cmd.Process.Signal(syscall.Signal(0))
+	if err == nil {
+		logger.Println("Unable to exit proc", process.Name+". Killing")
+		err := cmd.Process.Kill()
+		if err != nil {
+			logger.Println("Got error from killing proc", process.Name+":", err)
+		}
+	}
+	process.Status = C_Killed
+	process.Exit = -1
+}
+
 func RunProcess(ctx context.Context, process *Process,
 	envlock chan interface{}) ProcExit {
 	cmd := exec.Command(process.Conf.Cmd, process.Conf.Args...)
@@ -190,25 +212,7 @@ func RunProcess(ctx context.Context, process *Process,
 			process.Status = C_Run
 			ticker.Stop()
 		case <-ctx.Done():
-			process.Status = C_Stopping
-			err := cmd.Process.Signal(process.Conf.Sig)
-			if err != nil {
-				logger.Println("Got error from signaling proc",
-					process.Name+":", err)
-			}
-			// wait
-			time.Sleep(time.Duration(process.Conf.StopTime) * time.Second)
-			// hard kill
-			err = cmd.Process.Signal(syscall.Signal(0))
-			if err == nil {
-				logger.Println("Unable to exit proc", process.Name+". Killing")
-				err := cmd.Process.Kill()
-				if err != nil {
-					logger.Println("Got error from killing proc", process.Name+":", err)
-				}
-			}
-			process.Status = C_Killed
-			process.Exit = -1
+			KillProcess(process, cmd)
 			return P_Killed
 		case code := <-cmdDone:
 			process.Exit = code
