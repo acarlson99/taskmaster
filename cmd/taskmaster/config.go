@@ -20,9 +20,9 @@ type Config struct {
 	Umask        int               `yaml:"umask"`    // int representing permissions
 	WorkingDir   string            `yaml:"workingdir"`
 	AutoStart    bool              `yaml:"autostart"`    // true/false (default: true)
-	AutoRestart  string            `yaml:"autorestart"`  // always/never/unexpected (defult: never)
+	AutoRestart  string            `yaml:"autorestart"`  // always/never/sometimes (defult: never)
 	ExitCodes    []int             `yaml:"exitcodes"`    // expected exit codes (default: 0)
-	StartRetries int               `yaml:"startretries"` // times to retry if unexpected exit (default: 0) (-1 for infinite)
+	StartRetries int               `yaml:"startretries"` // times to retry if sometimes exit (default: 0) (-1 for infinite)
 	StartTime    int               `yaml:"starttime"`    // time to start app
 	StopSignal   string            `yaml:"stopsignal"`   // signal to kill
 	StopTime     int               `yaml:"stoptime"`     // time until mean kill
@@ -170,7 +170,7 @@ func ParseConfig(filename string) (map[string]Config, error) {
 		}
 		sort.Ints(conf.ExitCodes)
 		if conf.AutoRestart == "" {
-			conf.AutoRestart = "unexpected"
+			conf.AutoRestart = "sometimes"
 		}
 		if conf.NumProcs <= 0 {
 			conf.NumProcs = 1

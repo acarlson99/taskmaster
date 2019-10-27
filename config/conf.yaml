@@ -9,7 +9,7 @@ programs:
     umask: 022
     workingdir: /tmp
     autostart: true
-    autorestart: unexpected
+    autorestart: sometimes
     exitcodes:
       - 0
       - 2
@@ -29,7 +29,7 @@ programs:
     umask: 077
     workingdir: /tmp
     autostart: true
-    autorestart: unexpected
+    autorestart: sometimes
     exitcodes:
       - 0
     startretries: 3
